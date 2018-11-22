@@ -5,7 +5,7 @@ CC   = gcc
 OBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o
 LINKOBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o
 BIN  = libapp.a
-CFLAGS = -Wall -m32
+CFLAGS = -Wall
 RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
