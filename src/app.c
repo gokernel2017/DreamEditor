@@ -67,6 +67,12 @@ static OBJECT * dialog      = NULL;
 static OBJECT * dlgYES      = NULL;
 static OBJECT * dlgNO       = NULL;
 static OBJECT * dlgOK       = NULL;
+//
+static OBJECT *file_dialog_root;
+static OBJECT *file_dialog;
+static OBJECT *file_dialog_EDIT;
+static OBJECT *file_dialog_OK;
+static OBJECT *file_dialog_CANCEL;
 //-----------------------------------------------
 static OBJECT * root         = NULL; // the root object
 static OBJECT * current      = NULL; // the current object
@@ -539,7 +545,6 @@ int app_ShowDialog (char *text, int ok) {
 
     if (dialog_root == NULL) {
         if ((dialog_root = app_ObjectNew (proc_null,0,0,0,0,0,0,NULL)) != NULL) {
-printf ("Criando DIALOG\n");
             dialog_data.fg = COLOR_ORANGE;
             dialog_data.bg = COLOR_WHITE;
             dialog = app_ObjectNew (proc_dialog,(screen->w/2)-250,(screen->h/2)-50,500,100,0,0,&dialog_data);
@@ -604,16 +609,21 @@ printf ("Criando DIALOG\n");
     return dialog_ret;
 }
 
-OBJECT *file_dialog_root;
-OBJECT *file_dialog;
-OBJECT *file_dialog_EDIT;
-OBJECT *file_dialog_OK;
-OBJECT *file_dialog_CANCEL;
+void call_edit_file_dialog (ARG *a) {
+    if (a->key == SDLK_RETURN) {
+        dialog_ret = 1;
+        dialog_quit = 1;
+    }
+    else
+    if (a->key == SDLK_ESCAPE) {
+        dialog_ret = 0;
+        dialog_quit = 1;
+    }
+}
 
-int app_FileDialog (char const *title, char *path) {
+int app_FileDialog (char const *title, char path[1024]) {
     if (file_dialog_root == NULL) {
         if ((file_dialog_root = app_ObjectNew (proc_null,0,0,0,0,0,0,NULL)) != NULL) {
-printf ("Criando FILE DIALOG\n");
             dialog_data.fg = COLOR_ORANGE;
             dialog_data.bg = COLOR_WHITE;
             file_dialog = app_ObjectNew (proc_dialog,(screen->w/2)-250,(screen->h/2)-50,500,110,0,0,&dialog_data);
@@ -623,6 +633,7 @@ printf ("Criando FILE DIALOG\n");
             file_dialog_OK = app_NewButton (file_dialog, ID_YES, 142, 70, "OK");
             file_dialog_CANCEL  = app_NewButton (file_dialog, ID_NO,  258, 70, "CANCEL");
             //
+            app_SetCall (file_dialog_EDIT, call_edit_file_dialog);
             app_SetCall (file_dialog_OK, call_dialog);
             app_SetCall (file_dialog_CANCEL, call_dialog);
             app_SetSize (file_dialog_EDIT, file_dialog->rect.w-27, 0);
@@ -636,6 +647,9 @@ printf ("Criando FILE DIALOG\n");
         state = RET_REDRAW_ALL;
         dialog_ret = 0;
         dialog_quit = 0;
+
+        if (path)
+            app_EditSetText (file_dialog_EDIT, path);
 
         if (title && strlen(title) < DIALOG_TEXT_SIZE-1) {
             sprintf (dialog_data.text, "%s", title);
@@ -662,7 +676,6 @@ printf ("Criando FILE DIALOG\n");
     }
     
     sprintf (path, "%s", app_EditGetText(file_dialog_EDIT));
-//printf ("Saindo do LOOP ... FileDialog\n");
 
     return dialog_ret;
 }

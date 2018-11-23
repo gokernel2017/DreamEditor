@@ -1,0 +1,32 @@
+app_Init (int argc, char **argv);
+app_Run (void (*call) (void));
+app_GetData (OBJECT *o);
+app_GetRect (OBJECT *o, SDL_Rect *rect);
+app_GetType (OBJECT *o);
+app_GetByID (int id);
+app_FileOpen (const char *FileName);
+app_SetFocus (OBJECT *o);
+app_SetSize (OBJECT *o, int w, int h);
+app_SetVisible (OBJECT *o, int visible);
+app_Focused (OBJECT *o);
+app_SetCall (OBJECT *o, void (*call) (ARG *arg));
+app_ObjectAdd (OBJECT *o, OBJECT *sub);
+app_ObjectUpdate (OBJECT *o);
+app_ShowDialog (char *text, int ok);
+app_FileDialog (char const *title, char *path);
+app_SendMessage (OBJECT *o, int msg, int value);
+app_ObjectNew
+app_NewButton (OBJECT *parent, int id, int x, int y, char *text);
+app_NewEdit (OBJECT *parent, int id, int x, int y, char *text, int size);
+app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int size);
+app_EditorInsertChar (char *string, register int index, int ch);
+app_EditorSetFileName (OBJECT *o, char *FileName);
+app_EditorFindString (OBJECT *o, char *str, int start);
+app_EditorListFunction (OBJECT *o, MENU *menu);
+app_EditorFree (OBJECT *o);
+app_EditGetText (OBJECT *o);
+app_MenuCreate (int w, int h);
+app_MenuItenAdd (MENU *menu, char *text);
+app_MenuItenClear (MENU *menu);
+app_Menu (MENU *menu, int x, int y, void (*call) (MENU *menu, char *text));
+

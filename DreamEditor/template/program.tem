@@ -1,0 +1,18 @@
+//-------------------------------------------------------------------
+// DESCRIPTION:
+//   Template Basic C Program.
+//
+// FILE:
+//   program.c
+//
+// COMPILE:
+//   gcc program.c -o program -Wall
+//
+//-------------------------------------------------------------------
+//
+#include <stdio.h>
+
+int main (int argc, char **argv) {
+    return 0;
+}
+

@@ -1,0 +1,21 @@
+//-------------------------------------------------------------------
+// DECRIPTION:
+//   Template Application API.
+// 
+// FILE:
+//   program.c
+//
+// COMPILE:
+//   gcc program.c -o program libapp.a -lSDL -Wall
+//
+//-------------------------------------------------------------------
+//
+#include "src/app.h"
+
+int main (int argc, char **argv) {
+    if (app_Init (argc,argv)) {
+        app_Run (NULL);
+    }
+    return 0;
+}
+

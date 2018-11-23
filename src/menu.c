@@ -185,10 +185,12 @@ char * app_Menu (MENU *m, int x, int y, void (*call) (MENU *menu, char *text)) {
                     }
                     else
                     if (e.button.button == 1 || e.button.button == 3) {
-                        if (e.button.x > x && e.button.x < x+m->w && e.button.y > y && e.button.y < y+m->h)
-                            return return_menu_text;
-                        else
+                        if (e.button.x > x && e.button.x < x+m->w && e.button.y > y && e.button.y < y+m->h) {
+                            if (e.button.y > y+m->pos_y && e.button.y < y+m->pos_y+m->button_h)
+                                return return_menu_text;
+                        } else {
                             return NULL;
+                        }
                     }
                     break; // case SDL_MOUSEBUTTONDOWN:
 

@@ -1,5 +1,12 @@
 //-------------------------------------------------------------------
 //
+// THANKS TO:
+// ----------------------------------------------
+//
+// 01 : God the creator of the heavens and the earth in the name of Jesus Christ.
+//
+// ----------------------------------------------
+//
 // Dream Editor:
 //
 // COMPILE:
@@ -8,24 +15,19 @@
 // USAGE:
 //   dream <FileName.txt>
 //
-// TO SAVE THE TEXT (in editor):
-//   CTRL + S
+// BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
 //
 #include "src/app.h"
 
-#ifdef WIN32
-    #include "io.h"
-#else
-    #include <sys/stat.h>
-    #include <dirent.h>
-    #include <unistd.h>
-#endif
+#define DREAM_VERSION         0
+#define DREAM_VERSION_SUB     90
+#define DREAM_VERSION_PATCH   0
 
 #define ID_BUTTON1    1000  // FuncList
 #define ID_BUTTON2    1001  // Templat
-#define ID_BUTTON3    1002  // About
+#define ID_BT_ABOUT   1002  // About
 #define ID_EDIT       1003
 #define ID_EDITOR     1004
 #define ID_SHELL      1005
@@ -39,12 +41,21 @@
     #define EDITOR_DIR_TEMPLATE   "/etc/DreamEditor/template/"
 #endif
 
-OBJECT *button1, *button2, *button3, *edit, *editor, *shell;
+OBJECT *button1, *button2, *bt_about, *edit, *editor, *shell;
 MENU *menu;
 char *text = NULL;
 char *FileName = NULL;
 int find_pos;
 int value = 1;
+
+int isinit (char *name, char *string) {
+    while (*name) {
+        if (*name != *string) return 0;
+        name++;
+        string++;
+    }
+    return 1;
+}
 
 void call_menu (MENU *m, char *text) {
     printf ("MENU INDEX = %d\n", m->index);
@@ -132,6 +143,7 @@ void call_button2 (ARG *a) {
                     data->pos++;
                 }
             }
+            data->saved = 0;
             fclose(fp);
         }
     }
@@ -182,7 +194,7 @@ void call_editor (ARG *a) {
             int h = menu->h;
             char *ret; // menu return text
             app_GetRect (editor, &r);
-            menu->w = 200; menu->h = 129;
+            menu->w = 250; menu->h = 129;
             app_MenuItenClear (menu);
             for(;;) {
                 int c = data->text[i];
@@ -191,13 +203,16 @@ void call_editor (ARG *a) {
                 i--;
             }
             while (i < data->pos) {
-                name[count++] = data->text[i++];
+                int ch = data->text[i++];
+                if (ch > 32) {
+                    name[count++] = ch;
+                }
                 if (count >= sizeof(name)) break;
             }
             name[count] = 0;
-//            printf ("name(%s)\n", name);
+            //printf ("name(%s)\n", name);
 		        while (fgets(buf, sizeof(buf), fp) != NULL) {
-                if (*buf == *name && strstr(buf, name))
+                if (*buf == *name && isinit(name, buf))
                     app_MenuItenAdd (menu, buf);
             }
             fclose(fp);
@@ -224,6 +239,7 @@ void call_editor (ARG *a) {
                     }
                     s++;
                 }
+                data->saved = 0;
             }
             menu->w = w; menu->h = h;
             app_ObjectUpdate (editor);
@@ -241,7 +257,9 @@ void call_editor (ARG *a) {
         DATA_EDITOR *data = app_GetData (editor);
         if (data) {
             if (data->FileName[0]==0) {
-                char buf [255] = { 0 };
+                char buf [1024];
+                // copy the current directory name to object edit.
+                getcwd (buf, sizeof(buf)-1);
                 if (app_FileDialog ("Save File:", buf)) {
                     sprintf (data->FileName, "%s", buf);
                 }
@@ -255,7 +273,9 @@ void call_editor (ARG *a) {
                     s++;
                 }
                 fclose (fp);
-                printf ("\nOK Saved: '%s'\n", data->FileName);
+                data->saved = 1;
+                app_ObjectUpdate (editor);
+//                printf ("\nOK Saved: '%s'\n", data->FileName);
             }
             else {
                 printf ("\nInvalid File Name: '%s'\nPlease Edit a Valid File Name !", data->FileName);
@@ -281,6 +301,7 @@ void call_editor (ARG *a) {
                 }
             }
             fclose(fp);
+            data->saved = 0;
             app_SendMessage (editor, MSG_KEY, 0);
             app_ObjectUpdate (editor);
         }
@@ -297,12 +318,38 @@ void call_shell (ARG *a) {
     }
 }
 
+void call_bt_about (ARG *a) {
+#define WIDTH   450
+#define HEIGHT  300
+    SDL_Event e;
+    char buf[1024];
+    int x = (screen->w/2)-WIDTH/2;
+    int y = (screen->h/2)-HEIGHT/2;
+    SDL_FillRect (screen, &(SR) { x+1, y+1, WIDTH-2, HEIGHT-2}, COLOR_WHITE);
+    DrawRectR (screen, x, y, WIDTH, HEIGHT, COLOR_ORANGE);
+    sprintf (buf, "Dream Editor - Version: %d.%d.%d", DREAM_VERSION, DREAM_VERSION_SUB, DREAM_VERSION_PATCH);
+    DrawText (screen, buf, (screen->w/2)-(strlen(buf)*8)/2, y+20, COLOR_ORANGE);
+    DrawText (screen, "KEY USAGE:", x+15, y+50, COLOR_ORANGE);
+    DrawText (screen, "CTRL + S: Save the text", x+15+16, y+70, COLOR_ORANGE);
+    DrawText (screen, "CTRL + C: Copy the selected text", x+15+16, y+90, COLOR_ORANGE);
+    DrawText (screen, "CTRL + V: Paste the text", x+15+16, y+110, COLOR_ORANGE);
+    DrawText (screen, "CTRL + A: Complete Words from MENU List", x+15+16, y+130, COLOR_ORANGE);
+    DrawText (screen, "CTRL + Y: Delete Line", x+15+16, y+150, COLOR_ORANGE);
+    SDL_UpdateRect (screen, x, y, WIDTH, HEIGHT);
+    for (;;) {
+        if (SDL_PollEvent(&e) && (e.type == SDL_KEYUP || e.type == SDL_MOUSEBUTTONUP))
+            break;
+        SDL_Delay(10);
+    }
+    app_ObjectUpdate (editor);
+}
+
 void CreateInterface (void) {
 
     button1 = app_NewButton (NULL, ID_BUTTON1, 3, 3, "FuncList");
     button2 = app_NewButton (NULL, ID_BUTTON2, 106, 3, "Template");
-    button3 = app_NewButton (NULL, ID_BUTTON3, 106+103, 3, "About");
-    edit = app_NewEdit (NULL, ID_EDIT, 209+103, 3, "Find Text | FILE NAME", EDITOR_FILE_NAME_SIZE-2);
+    bt_about = app_NewButton (NULL, ID_BT_ABOUT, 106+103, 3, "About");
+    edit = app_NewEdit (NULL, ID_EDIT, 209+103, 3, "Find Text", EDITOR_FILE_NAME_SIZE-2);
     app_SetSize (edit, 486, 0);
 
     if (text && FileName) {
@@ -310,20 +357,20 @@ void CreateInterface (void) {
         app_EditorSetFileName (editor, FileName);
     } else {
         editor = app_NewEditor (NULL, ID_EDITOR, 3, 33,
-        " Uriel Editor:\n   CTRL + S: Save The Text\n",
+        " Dream Editor:\n   CTRL + S: Save The Text\n",
         50000
         );
     }
     shell = app_NewEdit (NULL, ID_SHELL, 3, screen->h-30, "gcc -v", EDITOR_FILE_NAME_SIZE-2);
     app_SetSize (shell, screen->w-6, 28);
 
-//    app_SetSize (editor, screen->w-6, screen->h-35);
     app_SetSize (editor, screen->w-6, screen->h-66);
     app_SetFocus (editor);
     app_SetCall (editor, call_editor);
 
     app_SetCall (button1, call_button1);
     app_SetCall (button2, call_button2);
+    app_SetCall (bt_about, call_bt_about);
     app_SetCall (edit, call_edit);
     app_SetCall (shell, call_shell);
 
@@ -339,6 +386,7 @@ void Finalize (void) {
 }
 
 int main (int argc, char **argv) {
+
     if (app_Init(argc,argv)) {
 
         if (argc >= 2 && (text = app_FileOpen(argv[1])) != NULL) {

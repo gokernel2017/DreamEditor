@@ -320,7 +320,10 @@ int proc_editor (OBJECT *o, int msg, int value) {
             sprintf (buf, "LINE: %d/%d  COL: %d - LEN/SIZE(%d/%d) | %d('%c' = %d) | FILE: %s", data->line+1, data->line_count, data->col+1, data->len, data->size, data->pos, data->text[data->pos], data->text[data->pos], data->FileName);
         else
             sprintf (buf, "LINE: %d/%d  COL: %d - LEN/SIZE(%d/%d) | %d('%c' = %d) | FILE: noname", data->line+1, data->line_count, data->col+1, data->len, data->size, data->pos, data->text[data->pos], data->text[data->pos]);
-        DrawText (screen, buf, r.x+5, r.y+r.h-15, COLOR_WHITE);
+        if (data->saved)
+            DrawText (screen, buf, r.x+5, r.y+r.h-15, COLOR_WHITE);
+        else
+            DrawText (screen, buf, r.x+5, r.y+r.h-15, C_COMMENT);
 
         } break; // case MSG_DRAW:
 
@@ -508,6 +511,17 @@ int proc_editor (OBJECT *o, int msg, int value) {
                     s++;
                 }
             }
+            else
+            if (value == CTRL_KEY_Y) { // delete the line
+                int _loop_, i;
+                data->pos = data->line_ini; data->col = data->saved = 0;
+
+                for (_loop_= 0; _loop_ <= data->line_len; _loop_++)
+                    for (i = data->pos; data->text[i]; i++)
+                        data->text[i] = data->text[i+1];
+
+                data->len = strlen(data->text);
+            }
         }
         else if (key_shift) {
             if (!is_selected) { data->sel_start = data->pos; }
@@ -541,6 +555,7 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
         }
         data->text[i] = 0;
         data->len = i;
+        data->saved = 1;
     } else {
         data->text[0] = 0;
     }

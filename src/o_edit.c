@@ -145,10 +145,6 @@ int proc_edit (OBJECT *o, int msg, int value) {
                     s[p] = s[p+1];
             }
         }
-        else if (value == SDLK_RETURN || value == SDLK_TAB) {
-            // bla bla bla ...
-            return RET_CALL;
-        }
         else {
             value &= 0xff;
 
@@ -162,19 +158,12 @@ int proc_edit (OBJECT *o, int msg, int value) {
                     data->d2++;
                 }
             }
-            else return 0;
+//            else return 0;
         }
-
-//        if (o->callback)
-//            o->callback (o, MSG_CHAR, value);
 
         // draw this and display: 
         app_ObjectUpdate (o);
-//        o->proc (o, MSG_DRAW, 0);
-//        SDL_UpdateRect (screen, o->px, o->py, o->w, o->h);
-
-//        if (object_focus)
-//            SDL_UpdateRect (screen, object_focus->px, object_focus->py, object_focus->w, object_focus->h);
+        return RET_CALL;
 
         } break; // case MSG_CHAR:
 
@@ -218,5 +207,13 @@ char * app_EditGetText (OBJECT *o) {
             return data->text;
     }
     return NULL;
+}
+
+void app_EditSetText (OBJECT *o, char *text) {
+    if (app_GetType(o) == OBJECT_TYPE_EDIT) {
+        DATA_EDIT *data = app_GetData(o);
+        if (data && data->text && text)
+            sprintf (data->text, "%s", text);
+    }
 }
 
