@@ -257,10 +257,15 @@ void app_UpdateGui (OBJECT *o) {
         if ((key = ev.key.keysym.unicode)==0)
             key = ev.key.keysym.sym;
 
-        if (key == SDLK_RCTRL || key == SDLK_LCTRL)
+//        if (ev.key.keysym.sym == SDLK_RCTRL || ev.key.keysym.sym == SDLK_LCTRL) {
+        if (key == SDLK_RCTRL || key == SDLK_LCTRL) {
             key_ctrl = 1;
-        if (key == SDLK_RSHIFT || key == SDLK_LSHIFT)
+        }
+        else
+//        if (ev.key.keysym.sym == SDLK_RSHIFT || ev.key.keysym.sym == SDLK_LSHIFT) {
+        if (key == SDLK_RSHIFT || key == SDLK_LSHIFT) {
             key_shift = 1;
+        }
 
         if (key == SDLK_ESCAPE && o == root) {
             quit = app_ShowDialog("Application API - Exit ?", 0);
@@ -290,10 +295,15 @@ void app_UpdateGui (OBJECT *o) {
         if ((k = ev.key.keysym.unicode)==0)
             k = ev.key.keysym.sym;
 
-        if (k == SDLK_RCTRL || k == SDLK_LCTRL)
+        //if (ev.key.keysym.sym == SDLK_RCTRL || ev.key.keysym.sym == SDLK_LCTRL) {
+        if (k == SDLK_RCTRL || k == SDLK_LCTRL) {
             key_ctrl = 0;
-        if (k == SDLK_RSHIFT || k == SDLK_LSHIFT)
+        }
+        else
+        //if (ev.key.keysym.sym == SDLK_RSHIFT || ev.key.keysym.sym == SDLK_LSHIFT) {
+        if (k == SDLK_RSHIFT || k == SDLK_LSHIFT) {
             key_shift = 0;
+        }
 
         } break; // case SDL_KEYUP:
 
