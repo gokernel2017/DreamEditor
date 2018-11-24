@@ -23,7 +23,7 @@
 
 #define DREAM_VERSION         0
 #define DREAM_VERSION_SUB     90
-#define DREAM_VERSION_PATCH   0
+#define DREAM_VERSION_PATCH   1
 
 #define ID_BUTTON1    1000  // FuncList
 #define ID_BUTTON2    1001  // Templat
@@ -335,6 +335,9 @@ void call_bt_about (ARG *a) {
     DrawText (screen, "CTRL + V: Paste the text", x+15+16, y+110, COLOR_ORANGE);
     DrawText (screen, "CTRL + A: Complete Words from MENU List", x+15+16, y+130, COLOR_ORANGE);
     DrawText (screen, "CTRL + Y: Delete Line", x+15+16, y+150, COLOR_ORANGE);
+    //
+    DrawText (screen, "https://github.com/gokernel2017/DreamEditor", x+15, y+250, COLOR_ORANGE);
+    DrawText (screen, "BY: Francisco - gokernel@hotmail.com", x+15, y+270, COLOR_ORANGE);
     SDL_UpdateRect (screen, x, y, WIDTH, HEIGHT);
     for (;;) {
         if (SDL_PollEvent(&e) && (e.type == SDL_KEYUP || e.type == SDL_MOUSEBUTTONUP))

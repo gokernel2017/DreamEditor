@@ -116,11 +116,16 @@ char * app_Menu (MENU *m, int x, int y, void (*call) (MENU *menu, char *text)) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
-            case SDL_KEYUP:
-                if (e.key.keysym.sym == SDLK_RCTRL || e.key.keysym.sym == SDLK_LCTRL) {
+            case SDL_KEYUP: {
+                int k = e.key.keysym.sym;
+                if (k == SDLK_RCTRL || k == SDLK_LCTRL) {
                     key_ctrl = 0;
                 }
-                break;
+                else
+                if (k == SDLK_RSHIFT || k == SDLK_LSHIFT) {
+                    key_shift = 0;
+                }
+                } break;
 
             case SDL_KEYDOWN: {
                 int k;

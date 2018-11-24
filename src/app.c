@@ -137,11 +137,10 @@ int app_Init (int argc, char **argv) {
     SDL_EnableUNICODE (1);
     SDL_EnableKeyRepeat (SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL); // For keypressed
 
-    root = app_ObjectNew (proc_null,0,0,0,0,0,0,NULL);
+    if ((root = app_ObjectNew (proc_null,0,0,0,0,0,0,NULL)) == NULL)
+  return 0;
 
     atexit (SDL_Quit);
-
-printf ("color_white: %d\n", MRGB(255,255,255));
 
     return 1;
 }
@@ -257,16 +256,14 @@ void app_UpdateGui (OBJECT *o) {
         if ((key = ev.key.keysym.unicode)==0)
             key = ev.key.keysym.sym;
 
-//        if (ev.key.keysym.sym == SDLK_RCTRL || ev.key.keysym.sym == SDLK_LCTRL) {
         if (key == SDLK_RCTRL || key == SDLK_LCTRL) {
             key_ctrl = 1;
         }
         else
-//        if (ev.key.keysym.sym == SDLK_RSHIFT || ev.key.keysym.sym == SDLK_LSHIFT) {
         if (key == SDLK_RSHIFT || key == SDLK_LSHIFT) {
             key_shift = 1;
         }
-
+        else
         if (key == SDLK_ESCAPE && o == root) {
             quit = app_ShowDialog("Application API - Exit ?", 0);
         }
@@ -295,12 +292,10 @@ void app_UpdateGui (OBJECT *o) {
         if ((k = ev.key.keysym.unicode)==0)
             k = ev.key.keysym.sym;
 
-        //if (ev.key.keysym.sym == SDLK_RCTRL || ev.key.keysym.sym == SDLK_LCTRL) {
         if (k == SDLK_RCTRL || k == SDLK_LCTRL) {
             key_ctrl = 0;
         }
         else
-        //if (ev.key.keysym.sym == SDLK_RSHIFT || ev.key.keysym.sym == SDLK_LSHIFT) {
         if (k == SDLK_RSHIFT || k == SDLK_LSHIFT) {
             key_shift = 0;
         }
