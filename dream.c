@@ -31,6 +31,7 @@
 #define ID_EDIT       1003
 #define ID_EDITOR     1004
 #define ID_SHELL      1005
+#define ID_CONSOLE    1006
 
 #ifdef WIN32
     #define EDITOR_DIR            "c:\\DreamEditor\\"
@@ -41,7 +42,7 @@
     #define EDITOR_DIR_TEMPLATE   "/etc/DreamEditor/template/"
 #endif
 
-OBJECT *button1, *button2, *bt_about, *edit, *editor, *shell;
+OBJECT *button1, *button2, *bt_about, *edit, *editor, *shell, *console;
 MENU *menu;
 char *text = NULL;
 char *FileName = NULL;
@@ -172,11 +173,25 @@ void call_edit (ARG *a) {
     }
 }
 
+void call_console (ARG *a) {
+    if (a->msg == MSG_MOUSE_DOWN) {
+        if (editor)
+            app_ObjectSetTop (editor);
+        return;
+    }
+}
+
 //
 // Editor Mult Line: CallBack
 //
 void call_editor (ARG *a) {
     char buf [1024];
+
+    if (a->msg == MSG_MOUSE_DOWN) {
+        if (console)
+            app_ObjectSetTop (console);
+        return;
+    }
 
     //
     // CTRL + A: complete text
@@ -314,9 +329,41 @@ void call_editor (ARG *a) {
 
 void call_shell (ARG *a) {
     if (a->key == SDLK_RETURN && shell) {
-        system (app_EditGetText(shell));
+        FILE *fp;
+        char buf[1024];
+        sprintf (buf, "%s 2>&1", app_EditGetText (shell));
+//        printf ("BUF(%s)\n", buf);
+        if ((fp = popen (buf, "r")) != NULL) {
+            while (fgets(buf, sizeof(buf), fp) != NULL) {
+                printf ("%s", buf); // aqui poderia ja armazenar ( buf ) ...
+            } 
+            pclose (fp);
+        }
     }
 }
+
+/*
+void console_store (void) {
+    FILE *fp;
+    char buf[1024];
+    app_ConsoleAdd (console, " ", COLOR_WORD);
+    app_ConsoleAdd (console, "gcc -v", COLOR_GREEN);
+    if ((fp = popen ("gcc -v 2>&1", "r")) != NULL) {
+        while (fgets(buf, sizeof(buf), fp) != NULL) {
+            app_ConsoleAdd (console, buf, COLOR_ORANGE);
+        }
+        pclose (fp);
+    }
+    app_ConsoleAdd (console, " ", COLOR_WORD);
+    app_ConsoleAdd (console, "dir", COLOR_GREEN);
+    if ((fp = popen ("dir 2>&1", "r")) != NULL) {
+        while (fgets(buf, sizeof(buf), fp) != NULL) {
+            app_ConsoleAdd (console, buf, COLOR_ORANGE);
+        }
+        pclose (fp);
+    }
+}
+*/
 
 void call_bt_about (ARG *a) {
 #define WIDTH   450
@@ -355,6 +402,18 @@ void CreateInterface (void) {
     edit = app_NewEdit (NULL, ID_EDIT, 209+103, 3, "Find Text", EDITOR_FILE_NAME_SIZE-2);
     app_SetSize (edit, 486, 0);
 
+    console = app_NewConsole (NULL, ID_CONSOLE, 3, 200, "Console");
+    app_SetSize (console, screen->w-6, screen->h-200);
+    app_SetCall (console, call_console);
+    //
+    app_ConsoleAdd (console, "THANKS TO", COLOR_GREEN);
+    app_ConsoleAdd (console, " ", COLOR_ORANGE);
+    app_ConsoleAdd (console, "01 : God the creator of the heavens and the earth in the name of Jesus Christ.", COLOR_WHITE);
+    app_ConsoleAdd (console, " ", COLOR_ORANGE);
+    app_ConsoleAdd (console, "Console 0.90.0", COLOR_ORANGE);
+    app_ConsoleAdd (console, " ", COLOR_ORANGE);
+    app_ConsoleAdd (console, "To clear the lines type: 'clear' or 'cls'.'", COLOR_WORD);
+
     if (text && FileName) {
         editor = app_NewEditor (NULL, ID_EDITOR, 3, 33, text, 50000);
         app_EditorSetFileName (editor, FileName);
@@ -364,10 +423,13 @@ void CreateInterface (void) {
         50000
         );
     }
-    shell = app_NewEdit (NULL, ID_SHELL, 3, screen->h-30, "gcc -v", EDITOR_FILE_NAME_SIZE-2);
-    app_SetSize (shell, screen->w-6, 28);
 
-    app_SetSize (editor, screen->w-6, screen->h-66);
+
+
+//    shell = app_NewEdit (NULL, ID_SHELL, 3, screen->h-30, "gcc -v", EDITOR_FILE_NAME_SIZE-2);
+//    app_SetSize (shell, screen->w-6, 28);
+
+    app_SetSize (editor, screen->w-6, screen->h-65);
     app_SetFocus (editor);
     app_SetCall (editor, call_editor);
 
@@ -375,7 +437,7 @@ void CreateInterface (void) {
     app_SetCall (button2, call_button2);
     app_SetCall (bt_about, call_bt_about);
     app_SetCall (edit, call_edit);
-    app_SetCall (shell, call_shell);
+//    app_SetCall (shell, call_shell);
 
     menu = app_MenuCreate (400, 250);
 }
@@ -386,6 +448,8 @@ void Finalize (void) {
         app_MenuItenClear (menu);
         free (menu);
     }
+    SEND (editor, MSG_FREE, 0);
+//    printf ("Finalize OBJECT DATA ponteiro %p\n", &editor->data);
 }
 
 int main (int argc, char **argv) {
@@ -394,8 +458,12 @@ int main (int argc, char **argv) {
 
         if (argc >= 2 && (text = app_FileOpen(argv[1])) != NULL) {
             FileName = argv[1];
+            printf ("agora STR ponteiro %p = %d\n", &text, (int)text);
         }
         CreateInterface ();
+        app_PrintData(editor);
+//console_store ();
+
         app_Run (NULL);
         Finalize();
     }

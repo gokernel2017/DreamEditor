@@ -36,7 +36,7 @@
 #define C_PRE_PROC              2016
 #define C_WORD                  2047
 
-static DATA_EDITOR  *data;
+//static DATA_EDITOR  *data;
 static char         *str;
 static SDL_Rect     r;
 static int          state, color;
@@ -190,7 +190,14 @@ static void SetTextColor (void) {
 }
 
 int proc_editor (OBJECT *o, int msg, int value) {
-    data = app_GetData (o);
+    DATA_EDITOR *data = app_GetData (o);
+
+    if (data==NULL) {
+        printf ("Editor Data NOT FOUND\n");
+        printf ("data ponteiro %p\n", &data);
+        return 0;
+    }
+
     str = data->text;
     app_GetRect (o, &r);
 
@@ -532,10 +539,25 @@ int proc_editor (OBJECT *o, int msg, int value) {
         return RET_CALL;
         } break; // case MSG_KEY:
 
+    case MSG_FREE:
+        if (data) {
+printf ("MSG FREE --- data ponteiro %p\n", &data);
+//            free (data->text);
+//            data->text = NULL;
+//            free (data);
+            //data = NULL;
+//            app_SetDataNULL (o);
+        }
+        break;
+
+    case MSG_MOUSE_DOWN:
+        return RET_CALL;
+
     }// switch (msg)
 
     return 0;
-}
+
+}// proc_editor()
 
 OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int size) {
     OBJECT *o;
@@ -543,6 +565,8 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
 
     if ((data = (DATA_EDITOR*)malloc(sizeof(DATA_EDITOR))) == NULL)
   return NULL;
+
+    printf ("EDITOR data ponteiro %p\n", &data);
 
     data->text = (char*) malloc (size);
     data->len = 0;
@@ -574,6 +598,8 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
     o = app_ObjectNew (proc_editor, x, y, 320, 245, id, OBJECT_TYPE_EDITOR, data);
 
     app_ObjectAdd (parent, o);
+
+    printf ("EDITOR data ponteiro %p\n", &data);
 
     return o;
 }

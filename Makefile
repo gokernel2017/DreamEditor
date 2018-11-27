@@ -2,8 +2,8 @@
 
 CPP  = g++
 CC   = gcc
-OBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o
-LINKOBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o
+OBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o obj/o_console.o
+LINKOBJ  = obj/app.o obj/draw.o obj/o_button.o obj/o_edit.o obj/o_editor.o obj/menu.o obj/o_console.o
 BIN  = libapp.a
 CFLAGS = -Wall
 RM = rm -f
@@ -33,6 +33,9 @@ obj/o_edit.o: src/o_edit.c
 
 obj/o_editor.o: src/o_editor.c
 	$(CC) $(CFLAGS) -c src/o_editor.c -o obj/o_editor.o
+
+obj/o_console.o: src/o_console.c
+	$(CC) $(CFLAGS) -c src/o_console.c -o obj/o_console.o
 
 obj/menu.o: src/menu.c
 	$(CC) $(CFLAGS) -c src/menu.c -o obj/menu.o

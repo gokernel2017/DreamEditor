@@ -39,6 +39,7 @@ extern "C" {
 //
 #define LIBIMPORT         extern
 #define BMP               SDL_Surface
+#define SEND              app_SendMessage
 //
 #define COLOR_ORANGE      64512
 #define CONSOLE_BG        8 // blue
@@ -50,6 +51,8 @@ extern "C" {
 #define COLOR_BLUE2       33237
 #define COLOR_RED         63488
 #define COLOR_OBG         15724527  // object bg
+#define COLOR_WORD        2047
+#define COLOR_GREEN       2016
 
 // CTRL + KEY:
 #define CTRL_KEY_A        1   // CTRL + A
@@ -69,6 +72,7 @@ extern "C" {
 #define MSG_MOUSE_UP      6   // click on leave
 #define MSG_ENTER         7   // on mouse enter
 #define MSG_LEAVE         8   // on mouse leave
+#define MSG_FREE          9
 // "proc_object" return:
 #define RET_REDRAW_ALL    10  // redraw all objects
 #define RET_REDRAW        11  // redraw the current object
@@ -84,14 +88,15 @@ enum {
     OBJECT_TYPE_BUTTON,
     OBJECT_TYPE_EDIT,
     OBJECT_TYPE_EDITOR,
-    OBJECT_TYPE_MENU
+//    OBJECT_TYPE_MENU
+    OBJECT_TYPE_CONSOLE
 };
 
 //-----------------------------------------------
 //-------------------  STRUCT  ------------------
 //-----------------------------------------------
 //
-typedef struct OBJECT       OBJECT; // opaque struct in file: "sgui.c"
+typedef struct OBJECT       OBJECT; // opaque struct in file: "app.c"
 typedef struct ARG          ARG;    // OBJECT Function Callback Argument
 typedef struct DATA_EDITOR  DATA_EDITOR;
 typedef struct TRect        TRect;
@@ -163,6 +168,7 @@ LIBIMPORT int key_shift;
 LIBIMPORT int       app_Init          (int argc, char **argv);
 LIBIMPORT void      app_Run           (void (*call) (void));
 LIBIMPORT void    * app_GetData       (OBJECT *o);
+LIBIMPORT void      app_SetDataNULL   (OBJECT *o);
 LIBIMPORT void      app_GetRect       (OBJECT *o, SDL_Rect *rect);
 LIBIMPORT int       app_GetType       (OBJECT *o);
 LIBIMPORT OBJECT  * app_GetByID       (int id);
@@ -174,6 +180,7 @@ LIBIMPORT int       app_Focused       (OBJECT *o);
 LIBIMPORT void      app_SetCall       (OBJECT *o, void (*call) (ARG *arg));
 LIBIMPORT void      app_ObjectAdd     (OBJECT *o, OBJECT *sub);
 LIBIMPORT void      app_ObjectUpdate  (OBJECT *o); // draw and display
+LIBIMPORT void      app_ObjectSetTop  (OBJECT *o);
 LIBIMPORT int       app_ShowDialog    (char *text, int ok);
 LIBIMPORT int       app_FileDialog    (char const *title, char path[1024]);
 LIBIMPORT int       app_SendMessage   (OBJECT *o, int msg, int value);
@@ -190,6 +197,7 @@ LIBIMPORT OBJECT * app_NewButton  (OBJECT *parent, int id, int x, int y, char *t
 LIBIMPORT OBJECT * app_NewEdit    (OBJECT *parent, int id, int x, int y, char *text, int size);
 LIBIMPORT OBJECT * app_NewEditor  (OBJECT *parent, int id, int x, int y, char *text, int size);
 LIBIMPORT OBJECT * app_NewMenu    (OBJECT *parent, int id, int x, int y);
+LIBIMPORT OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text);
 LIBIMPORT void app_EditorInsertChar (char *string, register int index, int ch);
 
 // Editor Functions:
@@ -203,6 +211,8 @@ LIBIMPORT void    app_EditorFree (OBJECT *o);
 LIBIMPORT void    app_EditSetText (OBJECT *o, char *text);
 LIBIMPORT char  * app_EditGetText (OBJECT *o);
 
+LIBIMPORT void    app_ConsoleAdd (OBJECT *o, char *text, int color);
+LIBIMPORT void    app_ConsoleClear (OBJECT *o);
 //
 // menu.c
 //
@@ -222,6 +232,11 @@ LIBIMPORT void  DrawRectR   (BMP *bmp, int x, int y, int w, int h, int color);
 LIBIMPORT void  DrawChar    (BMP *bmp, char ch, int x, int y, int color);
 LIBIMPORT void  DrawText    (BMP *bmp, char *text, int x, int y, int color);
 LIBIMPORT void  DrawWindow  (SDL_Rect *rect);
+
+
+// ... TEMP ...
+//
+LIBIMPORT void app_PrintData (OBJECT *o);
 
 #ifdef __cplusplus
 }

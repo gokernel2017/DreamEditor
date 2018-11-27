@@ -22,9 +22,8 @@
 #define ID_YES            1
 #define ID_OK             2
 
-// size: 64
-// size: 52
 struct OBJECT { // opaque struct
+    void      *data; // any information about object
     int       (*proc) (OBJECT *o, int msg, int value);
     void      (*call) (ARG *arg); // user function callback
     short     x;
@@ -37,8 +36,8 @@ struct OBJECT { // opaque struct
     OBJECT    *parent;
     OBJECT    *first;
     OBJECT    *next;
-    void      *data; // any information about object
 };
+
 typedef struct {
     char  text [DIALOG_TEXT_SIZE];
     int   fg;
@@ -380,6 +379,15 @@ void * app_GetData (OBJECT *o) {
     return o->data;
 }
 
+void app_PrintData (OBJECT *o) {
+    printf ("OBJECT DATA ponteiro %p\n", &o->data);
+}
+
+
+void app_SetDataNULL (OBJECT *o) {
+    o->data = NULL;
+}
+
 void app_GetRect (OBJECT *o, SDL_Rect *rect) {
     *rect = o->rect;
 }
@@ -706,6 +714,8 @@ char * app_FileOpen (const char *FileName) {
         str[i] = 0;
         str[i+1] = 0;
 
+printf ("FileOpen STR ponteiro %p = %d\n", &str, (int)str);
+
         return str;
     }
     else printf ("File Not Found: '%s'\n", FileName);
@@ -718,4 +728,25 @@ int app_SendMessage (OBJECT *o, int msg, int value) {
         return o->proc (o,msg,value);
     return 0;
 }
+
+void app_ObjectSetTop (OBJECT *o) {
+    OBJECT *aux     = root->first;
+    OBJECT *aux_pre = aux; // Node previous to 'p'
+
+    if (o == root->first) // If 'p' node is yet the first node, nothing to do
+  return;
+
+        // The aim of the loop is to get the node previous to 'p'
+    while (aux != o) {
+        aux_pre = aux;
+        aux     = aux->next;
+    } // At the end of this loop, 'aux' is the node 'p' and 'aux_pre' is the node previous to 'p'
+
+    aux_pre->next = o->next;  // Links 'p' previous and next nodes
+    o->next = root->first;   // 'p' next node is now the previous first node
+    root->first = o;         // The first node becomes 'p'
+
+//    state = RET_REDRAW_ALL;
+
+}//END: AS_win_set_top()
 
