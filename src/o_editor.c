@@ -713,7 +713,7 @@ void app_EditorInsertText (OBJECT *o, char *text) {
         data->len++;
         data->pos++;
     }
-    SEND (o, MSG_KEY, 0);
+    SEND (o, MSG_KEY, SDLK_RIGHT);
 }
 
 void app_EditorFree (OBJECT *o) {
