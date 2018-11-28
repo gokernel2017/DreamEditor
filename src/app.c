@@ -56,6 +56,7 @@ static void app_UpdatePos (OBJECT *obj);
 SDL_Surface *screen;
 int key_ctrl;
 int key_shift;
+int mx, my; // mouse_x, mouse_y
 
 DATA_DIALOG dialog_data;
 
@@ -94,8 +95,7 @@ static int
     state,
     quit,
     dialog_quit, dialog_ret,
-    key,
-    mx, my // mouse_x, mouse_y
+    key
     ;
 
 void _call_ (void) {

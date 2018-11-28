@@ -697,6 +697,25 @@ void app_EditorListFunction (OBJECT *o, MENU *menu) {
 }//END: AS_medit_menu_function()
 
 
+void app_EditorInsertText (OBJECT *o, char *text) {
+    DATA_EDITOR *data = app_GetData(o);
+    char *s = text;
+    while (*s) {
+        if (data->len < data->size-1) {
+            app_EditorInsertChar (data->text, data->pos, *s);
+            data->len++;
+            data->pos++;
+        }
+        s++;
+    }
+    if (data->len < data->size-1) {
+        app_EditorInsertChar (data->text, data->pos, '\n');
+        data->len++;
+        data->pos++;
+    }
+    SEND (o, MSG_KEY, 0);
+}
+
 void app_EditorFree (OBJECT *o) {
     DATA_EDITOR *data = app_GetData (o);
     if (app_GetType(o) == OBJECT_TYPE_EDITOR && data) {

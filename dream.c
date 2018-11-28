@@ -175,6 +175,11 @@ void call_edit (ARG *a) {
 
 void call_console (ARG *a) {
     if (a->msg == MSG_MOUSE_DOWN) {
+        DATA_CONSOLE *data = app_GetData (console);
+        // click in console line number
+        if (data->text_changed) {
+            app_EditorInsertText (editor, data->text);
+        }
         if (editor)
             app_ObjectSetTop (editor);
         return;
@@ -405,14 +410,6 @@ void CreateInterface (void) {
     console = app_NewConsole (NULL, ID_CONSOLE, 3, 200, "Console");
     app_SetSize (console, screen->w-6, screen->h-200);
     app_SetCall (console, call_console);
-    //
-    app_ConsoleAdd (console, "THANKS TO", COLOR_GREEN);
-    app_ConsoleAdd (console, " ", COLOR_ORANGE);
-    app_ConsoleAdd (console, "01 : God the creator of the heavens and the earth in the name of Jesus Christ.", COLOR_WHITE);
-    app_ConsoleAdd (console, " ", COLOR_ORANGE);
-    app_ConsoleAdd (console, "Console 0.90.0", COLOR_ORANGE);
-    app_ConsoleAdd (console, " ", COLOR_ORANGE);
-    app_ConsoleAdd (console, "To clear the lines type: 'clear' or 'cls'.'", COLOR_WORD);
 
     if (text && FileName) {
         editor = app_NewEditor (NULL, ID_EDITOR, 3, 33, text, 50000);
@@ -423,11 +420,6 @@ void CreateInterface (void) {
         50000
         );
     }
-
-
-
-//    shell = app_NewEdit (NULL, ID_SHELL, 3, screen->h-30, "gcc -v", EDITOR_FILE_NAME_SIZE-2);
-//    app_SetSize (shell, screen->w-6, 28);
 
     app_SetSize (editor, screen->w-6, screen->h-65);
     app_SetFocus (editor);
@@ -449,7 +441,6 @@ void Finalize (void) {
         free (menu);
     }
     SEND (editor, MSG_FREE, 0);
-//    printf ("Finalize OBJECT DATA ponteiro %p\n", &editor->data);
 }
 
 int main (int argc, char **argv) {

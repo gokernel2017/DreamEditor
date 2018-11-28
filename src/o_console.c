@@ -6,30 +6,46 @@
 //
 #include "app.h"
 
+#define CONSOLE_ITEN_MAX    3000
 #define DISTANCE            17  // line distance
-#define CONSOLE_TEXT_SIZE   1024
 
-typedef struct ITEN ITEN;
+SDL_Rect r;
 
-typedef struct {
-    char  text[CONSOLE_TEXT_SIZE+1];
-    int   line_top;
-    int   count;
-    int   col; // d2
-    ITEN  *iten_first;
-    ITEN  *iten_last;
-}DATA_CONSOLE;
+static void thanks (OBJECT *o);
 
-struct ITEN {
-    char  *text;
-    int   color;
-    ITEN  *next;
-};
-
+int console_get_line_text (DATA_CONSOLE *data) {
+    int pos_y = r.y+8, top = data->line_top;
+    for (;;) {
+        if (pos_y > (r.y+r.h)-50 || top > data->count)
+      break;
+        if (my > pos_y && my < pos_y+15) {
+            CONSOLE_ITEN *iten = data->iten_first;
+            int i = 0;
+            while (iten) {
+                if (i++ == top) {
+                    char *s = iten->text;
+                    int count = 0;
+                    while (*s && *s != '\n') {
+                        data->text[count] = *s++;
+                        if (count < CONSOLE_TEXT_SIZE)
+                            count++;
+                    }
+                    data->text[count] = 0;
+                    data->col = count;
+                    return 1;
+                }
+                iten = iten->next;
+            }
+            break;
+        }
+        top++;
+        pos_y += DISTANCE;
+    }
+    return 0;
+}
 
 int proc_console (OBJECT *o, int msg, int value) {
     DATA_CONSOLE *data = app_GetData(o);
-    SDL_Rect r;
     int l, p, w, x;
     int b;
     int scroll;
@@ -68,7 +84,7 @@ int proc_console (OBJECT *o, int msg, int value) {
 
     switch (msg) {
     case MSG_DRAW: {
-        ITEN *iten = data->iten_first;
+        CONSOLE_ITEN *iten = data->iten_first;
         char buf[20];
         int top = 0, pos_y;
 
@@ -212,9 +228,16 @@ int proc_console (OBJECT *o, int msg, int value) {
         app_ObjectUpdate (o);
         break;
 
-    case MSG_MOUSE_DOWN:
+    case MSG_MOUSE_DOWN: {
+        data->text_changed = 0;
+        if (mx < r.x+52) {
+            if (console_get_line_text (data)) {
+                data->text_changed = 1;
+                app_ObjectUpdate (o);
+            }
+        }
         return RET_CALL;
-
+        } break;
     }
     return 0;
 }
@@ -233,10 +256,13 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
 
     data->line_top = 0;
     data->count = 0;
+    data->col = 0;
+    data->text_changed = 0;
     data->iten_first = NULL;
     data->iten_last = NULL;
 
     o = app_ObjectNew (proc_console, x, y, 400, 300, id, OBJECT_TYPE_CONSOLE, data);
+    thanks (o);
 
     app_ObjectAdd (parent, o);
 
@@ -245,35 +271,33 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
 
 void app_ConsoleAdd (OBJECT *o, char *text, int color) {
     DATA_CONSOLE *data = app_GetData(o);
-    ITEN *iten;
-    if (data && text && (iten =(ITEN*)malloc(sizeof(ITEN))) != NULL) {
-        iten->text = strdup (text);
-        iten->color = color;
-        iten->next = NULL;
+    CONSOLE_ITEN *iten;
+    if (data && data->count < CONSOLE_ITEN_MAX && text && (iten =(CONSOLE_ITEN*)malloc(sizeof(CONSOLE_ITEN))) != NULL) {
+        if ((iten->text = strdup (text)) != NULL) {
+            iten->color = color;
+            iten->next = NULL;
 
-         // ADICIONE O PRIMEIRO ITEN NO INICIO
-        if (data->iten_first == NULL) {
-            data->iten_first = iten;
-            data->iten_last = iten;
-        } else {
-        // ADICIONE O ITEN NO FINAL
-            data->iten_last->next = iten;
-            data->iten_last = data->iten_last->next;
+            // ADICIONE O PRIMEIRO ITEN NO INICIO
+            if (data->iten_first == NULL) {
+                data->iten_first = iten;
+                data->iten_last = iten;
+            } else {
+                // ADICIONE O ITEN NO FINAL
+                data->iten_last->next = iten;
+                data->iten_last = data->iten_last->next;
+            }
+            data->count++;
         }
-        data->count++;
     }
 }
 
 void app_ConsoleClear (OBJECT *o) {
     DATA_CONSOLE *data = app_GetData(o);
     if (data) {
-        ITEN *info;
-printf ("Console clear:\n");
+        CONSOLE_ITEN *info;
         while (data->iten_first) {
             info = data->iten_first->next;
-
             if (data->iten_first->text) {
-                printf ("TEXT(%s):\n", data->iten_first->text);
                 free (data->iten_first->text);
             }
             free (data->iten_first);
@@ -281,9 +305,23 @@ printf ("Console clear:\n");
         }
         data->line_top = 0;
         data->count = 0;
+        data->col = 0;
+        data->text_changed = 0;
         data->iten_first = NULL;
         data->iten_last = NULL;
+        thanks (o);
     }
 }
 
+static void thanks (OBJECT *o) {
+    app_ConsoleAdd (o, "THANKS TO", COLOR_GREEN);
+    app_ConsoleAdd (o, "  01: God the creator of the heavens and the earth in the name of Jesus Christ.", COLOR_WORD);
+    app_ConsoleAdd (o, "  02: webton  - member of unidev (www.undev.com.br).", COLOR_WORD);
+    app_ConsoleAdd (o, "  03: Sam. L. - member of VOL (www.vivaolinux.com.br).", COLOR_WORD);
+    //  
+    app_ConsoleAdd (o, " ", COLOR_ORANGE);
+    app_ConsoleAdd (o, "Console Version 0.90.0", COLOR_ORANGE);
+    app_ConsoleAdd (o, " ", COLOR_ORANGE);
+    app_ConsoleAdd (o, "To clear the lines type: 'clear' or 'cls'.", COLOR_ORANGE);
+}
 

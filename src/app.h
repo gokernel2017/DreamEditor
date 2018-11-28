@@ -82,6 +82,7 @@ extern "C" {
 //
 #define EDITOR_FILE_NAME_SIZE 255
 #define EDITOR_LINE_DISTANCE  17
+#define CONSOLE_TEXT_SIZE     1024
 
 enum {
     OBJECT_TYPE_OBJECT = 1,
@@ -151,6 +152,23 @@ struct DATA_EDITOR {
     int   bg;         // bg color
 };
 
+typedef struct CONSOLE_ITEN  CONSOLE_ITEN;
+typedef struct {
+    char  text[CONSOLE_TEXT_SIZE+1];
+    int   line_top;
+    int   count;
+    int   col; // d2
+    int   text_changed; // is true on click in line number
+    CONSOLE_ITEN  *iten_first;
+    CONSOLE_ITEN  *iten_last;
+}DATA_CONSOLE;
+
+struct CONSOLE_ITEN {
+    char  *text;
+    int   color;
+    CONSOLE_ITEN  *next;
+};
+
 //-----------------------------------------------
 //-----------------  VARIABLES  -----------------
 //-----------------------------------------------
@@ -158,6 +176,7 @@ struct DATA_EDITOR {
 LIBIMPORT SDL_Surface *screen;
 LIBIMPORT int key_ctrl;
 LIBIMPORT int key_shift;
+LIBIMPORT int mx, my; // mouse_x, mouse_y
 
 //-----------------------------------------------
 //-----------------  PUBLIC API  ----------------
@@ -198,7 +217,9 @@ LIBIMPORT OBJECT * app_NewEdit    (OBJECT *parent, int id, int x, int y, char *t
 LIBIMPORT OBJECT * app_NewEditor  (OBJECT *parent, int id, int x, int y, char *text, int size);
 LIBIMPORT OBJECT * app_NewMenu    (OBJECT *parent, int id, int x, int y);
 LIBIMPORT OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text);
+
 LIBIMPORT void app_EditorInsertChar (char *string, register int index, int ch);
+LIBIMPORT void app_EditorInsertText (OBJECT *o, char *text);
 
 // Editor Functions:
 //
@@ -206,6 +227,7 @@ LIBIMPORT void    app_EditorSetFileName (OBJECT *o, char *FileName);
 LIBIMPORT int     app_EditorFindString (OBJECT *o, char *str, int start);
 LIBIMPORT void    app_EditorListFunction (OBJECT *o, MENU *menu);
 LIBIMPORT void    app_EditorFree (OBJECT *o);
+
 
 // Edit Functions:
 LIBIMPORT void    app_EditSetText (OBJECT *o, char *text);
