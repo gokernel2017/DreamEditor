@@ -9,17 +9,38 @@
 #define CONSOLE_ITEN_MAX    3000
 #define DISTANCE            17  // line distance
 
+typedef struct ITEN ITEN;
+
+typedef struct {
+    char  text[CONSOLE_TEXT_SIZE+1];
+    int   top; // line top
+    int   count;
+    int   col; // d2
+    int   text_changed; // is true on click in line number
+    ITEN  *current; // line_top
+    ITEN  *iten_first;
+    ITEN  *iten_last;
+}DATA_CONSOLE;
+
+struct ITEN {
+    char  *text;
+    int   color;
+    ITEN  *prev;
+    ITEN  *next;
+};
+
 SDL_Rect r;
 
 static void thanks (OBJECT *o);
 
+/*
 int console_get_line_text (DATA_CONSOLE *data) {
     int pos_y = r.y+8, top = data->line_top;
     for (;;) {
         if (pos_y > (r.y+r.h)-50 || top > data->count)
       break;
         if (my > pos_y && my < pos_y+15) {
-            CONSOLE_ITEN *iten = data->iten_first;
+            ITEN *iten = data->iten_first;
             int i = 0;
             while (iten) {
                 if (i++ == top) {
@@ -43,6 +64,7 @@ int console_get_line_text (DATA_CONSOLE *data) {
     }
     return 0;
 }
+*/
 
 int proc_console (OBJECT *o, int msg, int value) {
     DATA_CONSOLE *data = app_GetData(o);
@@ -84,31 +106,29 @@ int proc_console (OBJECT *o, int msg, int value) {
 
     switch (msg) {
     case MSG_DRAW: {
-        CONSOLE_ITEN *iten = data->iten_first;
+        ITEN *iten = data->current;
         char buf[20];
-        int top = 0, pos_y;
-
+        int top = data->top;
+        int pos_y;
 
         SDL_FillRect (screen, &(SR) {r.x+1, r.y+1, r.w-2, r.h-2 }, 0);
         DrawVline (screen, r.x+52, r.y, r.y+r.h-30, COLOR_ORANGE);
 
         pos_y = r.y;
         while (iten) {
+            char *s = iten->text;
+            int x = r.x+64;
             if (pos_y > (r.y+r.h)-50)
           break;
-            if (top >= data->line_top) {
-                char *s = iten->text;
-                int x = r.x+64;
-                sprintf (buf, "%04d", top+1);
-                DrawText (screen, buf, r.x+10, pos_y+10, COLOR_ORANGE);
-                while (*s) {
-                    if (x > (r.x+r.w)-16) break;
-                    DrawChar (screen, *s, x, pos_y+10, iten->color);
-                    x += 8;
-                    s++;
-                }
-                pos_y += DISTANCE;
+            sprintf (buf, "%04d", top+1);
+            DrawText (screen, buf, r.x+10, pos_y+10, COLOR_ORANGE);
+            while (*s) {
+                if (x > (r.x+r.w)-16) break;
+                DrawChar (screen, *s, x, pos_y+10, iten->color);
+                x += 8;
+                s++;
             }
+            pos_y += DISTANCE;
             top++;
             iten = iten->next;
         }
@@ -155,15 +175,15 @@ int proc_console (OBJECT *o, int msg, int value) {
       return 0;
 
         if (value == SDLK_UP) {
-            if (data->line_top >= 1) {
-                data->line_top--;
-                app_ObjectUpdate(o);
+            if (data->top >= 1) {
+                data->top--;
+                data->current = data->current->prev;
             }
         }
         else if (value == SDLK_DOWN) {
-            if (data->line_top < data->count-1) {
-                data->line_top++;
-                app_ObjectUpdate(o);
+            if (data->top < data->count-1) {
+                data->top++;
+                data->current = data->current->next;
             }
         }
         else if (value == SDLK_LEFT) {
@@ -199,14 +219,18 @@ int proc_console (OBJECT *o, int msg, int value) {
                 return 0;
             }
             sprintf (buf, "%s 2>&1", data->text);
-            data->line_top = data->count;
+//            data->top = data->count;
             app_ConsoleAdd (o, data->text, COLOR_GREEN);
+            while (data->top != data->count-1) {
+                data->top++;
+                data->current = data->current->next;
+            }
             if ((fp = popen (buf, "r")) != NULL) {
                 while (fgets(buf, sizeof(buf), fp) != NULL) {
                     app_ConsoleAdd (o, buf, COLOR_ORANGE);
                 }
                 pclose (fp);
-                app_ObjectUpdate (o);
+//                app_ObjectUpdate (o);
             }
         }
         else {
@@ -229,6 +253,7 @@ int proc_console (OBJECT *o, int msg, int value) {
         break;
 
     case MSG_MOUSE_DOWN: {
+/*
         data->text_changed = 0;
         if (mx < r.x+52) {
             if (console_get_line_text (data)) {
@@ -236,6 +261,7 @@ int proc_console (OBJECT *o, int msg, int value) {
                 app_ObjectUpdate (o);
             }
         }
+*/
         return RET_CALL;
         } break;
     }
@@ -254,7 +280,7 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
     else
         data->text[0] = 0;
 
-    data->line_top = 0;
+    data->top = 0;
     data->count = 0;
     data->col = 0;
     data->text_changed = 0;
@@ -271,20 +297,23 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
 
 void app_ConsoleAdd (OBJECT *o, char *text, int color) {
     DATA_CONSOLE *data = app_GetData(o);
-    CONSOLE_ITEN *iten;
-    if (data && data->count < CONSOLE_ITEN_MAX && text && (iten =(CONSOLE_ITEN*)malloc(sizeof(CONSOLE_ITEN))) != NULL) {
+    ITEN *iten;
+    if (data && data->count < CONSOLE_ITEN_MAX && text && (iten =(ITEN*)malloc(sizeof(ITEN))) != NULL) {
         if ((iten->text = strdup (text)) != NULL) {
             iten->color = color;
+            iten->prev = NULL;
             iten->next = NULL;
 
             // ADICIONE O PRIMEIRO ITEN NO INICIO
             if (data->iten_first == NULL) {
+                data->current = iten;
                 data->iten_first = iten;
                 data->iten_last = iten;
             } else {
                 // ADICIONE O ITEN NO FINAL
+                iten->prev = data->iten_last;
                 data->iten_last->next = iten;
-                data->iten_last = data->iten_last->next;
+                data->iten_last = iten;
             }
             data->count++;
         }
@@ -294,7 +323,7 @@ void app_ConsoleAdd (OBJECT *o, char *text, int color) {
 void app_ConsoleClear (OBJECT *o) {
     DATA_CONSOLE *data = app_GetData(o);
     if (data) {
-        CONSOLE_ITEN *info;
+        ITEN *info;
         while (data->iten_first) {
             info = data->iten_first->next;
             if (data->iten_first->text) {
@@ -303,10 +332,11 @@ void app_ConsoleClear (OBJECT *o) {
             free (data->iten_first);
             data->iten_first = info;
         }
-        data->line_top = 0;
+        data->top = 0;
         data->count = 0;
         data->col = 0;
         data->text_changed = 0;
+        data->current = NULL;
         data->iten_first = NULL;
         data->iten_last = NULL;
         thanks (o);

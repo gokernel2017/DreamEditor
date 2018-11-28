@@ -175,11 +175,13 @@ void call_edit (ARG *a) {
 
 void call_console (ARG *a) {
     if (a->msg == MSG_MOUSE_DOWN) {
+/*
         DATA_CONSOLE *data = app_GetData (console);
         // click in console line number
         if (data->text_changed) {
             app_EditorInsertText (editor, data->text);
         }
+*/
         if (editor)
             app_ObjectSetTop (editor);
         return;

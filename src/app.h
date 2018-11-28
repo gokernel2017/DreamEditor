@@ -152,23 +152,6 @@ struct DATA_EDITOR {
     int   bg;         // bg color
 };
 
-typedef struct CONSOLE_ITEN  CONSOLE_ITEN;
-typedef struct {
-    char  text[CONSOLE_TEXT_SIZE+1];
-    int   line_top;
-    int   count;
-    int   col; // d2
-    int   text_changed; // is true on click in line number
-    CONSOLE_ITEN  *iten_first;
-    CONSOLE_ITEN  *iten_last;
-}DATA_CONSOLE;
-
-struct CONSOLE_ITEN {
-    char  *text;
-    int   color;
-    CONSOLE_ITEN  *next;
-};
-
 //-----------------------------------------------
 //-----------------  VARIABLES  -----------------
 //-----------------------------------------------
