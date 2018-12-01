@@ -175,13 +175,10 @@ void call_edit (ARG *a) {
 
 void call_console (ARG *a) {
     if (a->msg == MSG_MOUSE_DOWN) {
-/*
-        DATA_CONSOLE *data = app_GetData (console);
-        // click in console line number
-        if (data->text_changed) {
-            app_EditorInsertText (editor, data->text);
+        char *s;
+        if ((s = app_ConsoleTextChanged(console))) {
+            app_EditorInsertText (editor, s);
         }
-*/
         if (editor)
             app_ObjectSetTop (editor);
         return;
@@ -455,8 +452,7 @@ int main (int argc, char **argv) {
         }
         CreateInterface ();
         app_PrintData(editor);
-//console_store ();
-
+printf ("cinza: %d\n", MRGB(100,100,100));
         app_Run (NULL);
         Finalize();
     }

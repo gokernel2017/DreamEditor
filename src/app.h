@@ -216,6 +216,7 @@ LIBIMPORT void    app_EditorFree (OBJECT *o);
 LIBIMPORT void    app_EditSetText (OBJECT *o, char *text);
 LIBIMPORT char  * app_EditGetText (OBJECT *o);
 
+LIBIMPORT char *  app_ConsoleTextChanged (OBJECT *o);
 LIBIMPORT void    app_ConsoleAdd (OBJECT *o, char *text, int color);
 LIBIMPORT void    app_ConsoleClear (OBJECT *o);
 //

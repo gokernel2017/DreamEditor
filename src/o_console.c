@@ -6,8 +6,9 @@
 //
 #include "app.h"
 
-#define CONSOLE_ITEN_MAX    3000
+#define CONSOLE_ITEN_MAX    10000
 #define DISTANCE            17  // line distance
+#define COLOR_DELETE        25388
 
 typedef struct ITEN ITEN;
 
@@ -17,7 +18,7 @@ typedef struct {
     int   count;
     int   col; // d2
     int   text_changed; // is true on click in line number
-    ITEN  *current; // line_top
+    ITEN  *iten_top; // the first displayed iten in top
     ITEN  *iten_first;
     ITEN  *iten_last;
 }DATA_CONSOLE;
@@ -32,39 +33,31 @@ struct ITEN {
 SDL_Rect r;
 
 static void thanks (OBJECT *o);
+void app_ConsoleDeteteIten (DATA_CONSOLE *data, ITEN *iten);
 
-/*
 int console_get_line_text (DATA_CONSOLE *data) {
-    int pos_y = r.y+8, top = data->line_top;
-    for (;;) {
-        if (pos_y > (r.y+r.h)-50 || top > data->count)
+    int pos_y = r.y+8;
+    ITEN *iten = data->iten_top;
+    while (iten) {
+        if (pos_y > (r.y+r.h)-50)
       break;
         if (my > pos_y && my < pos_y+15) {
-            ITEN *iten = data->iten_first;
-            int i = 0;
-            while (iten) {
-                if (i++ == top) {
-                    char *s = iten->text;
-                    int count = 0;
-                    while (*s && *s != '\n') {
-                        data->text[count] = *s++;
-                        if (count < CONSOLE_TEXT_SIZE)
-                            count++;
-                    }
-                    data->text[count] = 0;
-                    data->col = count;
-                    return 1;
-                }
-                iten = iten->next;
+            char *s = iten->text;
+            int count = 0;
+            while (*s && *s != '\n') {
+                data->text[count] = *s++;
+                if (count < CONSOLE_TEXT_SIZE)
+                    count++;
             }
-            break;
+            data->text[count] = 0;
+            data->col = count;
+            return 1;
         }
-        top++;
         pos_y += DISTANCE;
+        iten = iten->next;
     }
     return 0;
 }
-*/
 
 int proc_console (OBJECT *o, int msg, int value) {
     DATA_CONSOLE *data = app_GetData(o);
@@ -106,7 +99,7 @@ int proc_console (OBJECT *o, int msg, int value) {
 
     switch (msg) {
     case MSG_DRAW: {
-        ITEN *iten = data->current;
+        ITEN *iten = data->iten_top;
         char buf[20];
         int top = data->top;
         int pos_y;
@@ -171,19 +164,37 @@ int proc_console (OBJECT *o, int msg, int value) {
 
     case MSG_KEY:
 
-        if (value > 280)
+        if (value > 281)
       return 0;
 
         if (value == SDLK_UP) {
             if (data->top >= 1) {
                 data->top--;
-                data->current = data->current->prev;
+                data->iten_top = data->iten_top->prev;
             }
         }
         else if (value == SDLK_DOWN) {
             if (data->top < data->count-1) {
                 data->top++;
-                data->current = data->current->next;
+                data->iten_top = data->iten_top->next;
+            }
+        }
+        else if (value == SDLK_PAGEUP) {
+            int lines = ((r.h-28) / DISTANCE)-1;
+            while (lines--) {
+                if (data->top >= 1) {
+                    data->top--;
+                    data->iten_top = data->iten_top->prev;
+                }
+            }
+        }
+        else if (value == SDLK_PAGEDOWN) {
+            int lines = ((r.h-28) / DISTANCE)-1;
+            while (lines--) {
+                if (data->top < data->count-1) {
+                    data->top++;
+                    data->iten_top = data->iten_top->next;
+                }
             }
         }
         else if (value == SDLK_LEFT) {
@@ -219,19 +230,19 @@ int proc_console (OBJECT *o, int msg, int value) {
                 return 0;
             }
             sprintf (buf, "%s 2>&1", data->text);
-//            data->top = data->count;
             app_ConsoleAdd (o, data->text, COLOR_GREEN);
             while (data->top != data->count-1) {
                 data->top++;
-                data->current = data->current->next;
+                data->iten_top = data->iten_top->next;
             }
             if ((fp = popen (buf, "r")) != NULL) {
                 while (fgets(buf, sizeof(buf), fp) != NULL) {
                     app_ConsoleAdd (o, buf, COLOR_ORANGE);
                 }
                 pclose (fp);
-//                app_ObjectUpdate (o);
             }
+            data->text[0] = 0;
+            data->col = 0;
         }
         else {
             value &= 0xff;
@@ -253,7 +264,6 @@ int proc_console (OBJECT *o, int msg, int value) {
         break;
 
     case MSG_MOUSE_DOWN: {
-/*
         data->text_changed = 0;
         if (mx < r.x+52) {
             if (console_get_line_text (data)) {
@@ -261,11 +271,17 @@ int proc_console (OBJECT *o, int msg, int value) {
                 app_ObjectUpdate (o);
             }
         }
-*/
         return RET_CALL;
         } break;
     }
     return 0;
+}
+
+char * app_ConsoleTextChanged (OBJECT *o) {
+    DATA_CONSOLE *data = app_GetData(o);
+    if (data && data->text_changed)
+        return data->text;
+    return NULL;
 }
 
 OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
@@ -292,6 +308,7 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
 
     app_ObjectAdd (parent, o);
 
+printf ("CONSOLE ITEN: %d\n", sizeof(ITEN));
     return o;
 }
 
@@ -306,7 +323,7 @@ void app_ConsoleAdd (OBJECT *o, char *text, int color) {
 
             // ADICIONE O PRIMEIRO ITEN NO INICIO
             if (data->iten_first == NULL) {
-                data->current = iten;
+                data->iten_top = iten;
                 data->iten_first = iten;
                 data->iten_last = iten;
             } else {
@@ -336,12 +353,102 @@ void app_ConsoleClear (OBJECT *o) {
         data->count = 0;
         data->col = 0;
         data->text_changed = 0;
-        data->current = NULL;
+        data->iten_top = NULL;
         data->iten_first = NULL;
         data->iten_last = NULL;
         thanks (o);
     }
 }
+
+int isEmpty (DATA_CONSOLE *data) {
+    return (data->iten_first == NULL);
+}
+
+void app_ConsoleDeteteIten (DATA_CONSOLE *data, ITEN *iten) {
+    ITEN *prev;
+    ITEN *next;
+    if (isEmpty(data)) {
+        return;
+    }
+    prev = iten->prev;
+    next = iten->next;
+    if (prev != NULL) {
+        if (next != NULL) {
+            // Both the previous and next links are valid, so just bypass "link" without altering "list" at all.
+            prev->next = next;
+            next->prev = prev;
+        } else {
+            // Only the previous link is valid, so "prev" is now the last link in "list".
+            prev->next = 0;
+            data->iten_last = prev;
+        }
+    } else {
+        if (next != NULL) {
+            // Only the next link is valid, not the previous one, so "next" is now the first link in "list".
+            next->prev = 0;
+            data->iten_first = next;
+        } else {
+            // Neither previous nor next links are valid, so the list is now empty.
+            data->iten_first = NULL;
+            data->iten_last = NULL;
+        }
+    }
+    if (iten->text)
+        free (iten->text);
+    free (iten);
+}
+
+
+/*
+
+void delete_NODE(linked_list * list, NODE * node) {
+    NODE * prev;
+    NODE * next;
+    if (isEmpty(list)) {
+        return;
+    }
+    prev = node->prev;
+    next = node->next;
+    if (prev != NULL) {
+        if (next != NULL) {
+            // Both the previous and next links are valid, so just bypass "link" without altering "list" at all.
+            prev->next = next;
+            next->prev = prev;
+        } else {
+            // Only the previous link is valid, so "prev" is now the last link in "list".
+            prev->next = 0;
+            list->last = prev;
+        }
+    } else {
+        if (next != NULL) {
+            // Only the next link is valid, not the previous one, so "next" is now the first link in "list".
+            next->prev = 0;
+            list->first = next;
+        } else {
+            // Neither previous nor next links are valid, so the list is now empty.
+            list->first = 0;
+            list->last = 0;
+        }
+    }
+    free(node);
+}
+
+int SDL_LListRemove(SDL_LinkedList *list,SDL_LinkedListElem *elem)
+{
+    if(elem->prev != NULL)
+        elem->prev->next = elem->next;
+    else
+        list->first = elem->next;
+    
+    if(elem->next != NULL)
+        elem->next->prev = elem->prev;
+    else
+        list->last = elem->prev;
+
+    return 1;
+}
+
+*/
 
 static void thanks (OBJECT *o) {
     app_ConsoleAdd (o, "THANKS TO", COLOR_GREEN);
