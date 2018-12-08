@@ -36,6 +36,8 @@
 #define C_PRE_PROC              2016
 #define C_WORD                  2047
 
+static VM *vm;
+
 //static DATA_EDITOR  *data;
 static char         *str;
 static SDL_Rect     r;
@@ -340,6 +342,18 @@ int proc_editor (OBJECT *o, int msg, int value) {
     case MSG_KEY: {
         int count;
 
+        // CTRL + R
+        if (key_ctrl && keysym == 'r') {
+            if (vm) {
+                LEXER lexer;
+                if (app_LangParse (&lexer, vm, data->text, "EDITOR") == 0) {
+                    vm_Run(vm);
+                }
+                else app_ShowDialog (ErroGet(), DIALOG_OK);
+            }
+            return 0;
+        }
+
         if (value == SDLK_UP && data->line > 0) {
             if (data->line_pos > 0)
                 data->line_pos--;
@@ -599,7 +613,9 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
 
     app_ObjectAdd (parent, o);
 
-    printf ("EDITOR data ponteiro %p\n", &data);
+    if (vm == NULL) {
+        vm = app_LangInit (VM_DEFAULT_SIZE);
+    }
 
     return o;
 }

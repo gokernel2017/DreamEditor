@@ -100,7 +100,7 @@ int proc_console (OBJECT *o, int msg, int value) {
     switch (msg) {
     case MSG_DRAW: {
         ITEN *iten = data->iten_top;
-        char buf[20];
+        char sbuf[20];
         int top = data->top;
         int pos_y;
 
@@ -113,8 +113,8 @@ int proc_console (OBJECT *o, int msg, int value) {
             int x = r.x+64;
             if (pos_y > (r.y+r.h)-50)
           break;
-            sprintf (buf, "%04d", top+1);
-            DrawText (screen, buf, r.x+10, pos_y+10, COLOR_ORANGE);
+            sprintf (sbuf, "%04d", top+1);
+            DrawText (screen, sbuf, r.x+10, pos_y+10, COLOR_ORANGE);
             while (*s) {
                 if (x > (r.x+r.w)-16) break;
                 DrawChar (screen, *s, x, pos_y+10, iten->color);
@@ -128,8 +128,8 @@ int proc_console (OBJECT *o, int msg, int value) {
         DrawHline (screen, r.x, r.y+r.h-28, r.x+r.w-1, COLOR_ORANGE);
         //DrawText (screen, data->text, r.x+10, r.y+r.h-21, COLOR_GREEN);
         DrawRectR (screen, r.x, r.y, r.w, r.h, COLOR_ORANGE); // border
-        sprintf (buf, "%d", data->count);
-        DrawText (screen, buf, (r.x+r.w)-(strlen(buf)*8)-10, r.y+10, COLOR_ORANGE);
+        sprintf (sbuf, "%d", data->count);
+        DrawText (screen, sbuf, (r.x+r.w)-(strlen(sbuf)*8)-10, r.y+10, COLOR_ORANGE);
 
         // draw edit text:
         //-----------------------------------------------------------

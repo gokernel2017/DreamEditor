@@ -62,7 +62,7 @@ void call_menu (MENU *m, char *text) {
     printf ("MENU INDEX = %d\n", m->index);
 }
 
-void call_button1 (ARG *a) {
+void call_button1 (int msg) {
     if (menu) {
         char *ret;
         app_EditorListFunction (editor, menu);
@@ -72,7 +72,7 @@ void call_button1 (ARG *a) {
         app_ObjectUpdate (editor);
     }
 }
-void call_button2 (ARG *a) {
+void call_button2 (int msg) {
     char buf[1024];
     char *ret;
 
@@ -157,8 +157,8 @@ void call_button2 (ARG *a) {
 //
 // Line edit: CallBack
 //
-void call_edit (ARG *a) {
-    if (a->key == SDLK_RETURN) {
+void call_edit (int msg) {
+    if (key == SDLK_RETURN) {
         find_pos = app_EditorFindString (editor, app_EditGetText(edit), find_pos);
         if (find_pos != -1) {
             find_pos++;
@@ -167,14 +167,14 @@ void call_edit (ARG *a) {
         else find_pos = 0;
     }
     else
-    if (a->key == SDLK_TAB) {
+    if (key == SDLK_TAB) {
         app_SetFocus (editor);
         app_ObjectUpdate (editor);
     }
 }
 
-void call_console (ARG *a) {
-    if (a->msg == MSG_MOUSE_DOWN) {
+void call_console (int msg) {
+    if (msg == MSG_MOUSE_DOWN) {
         char *s;
         if ((s = app_ConsoleTextChanged(console))) {
             app_EditorInsertText (editor, s);
@@ -188,10 +188,10 @@ void call_console (ARG *a) {
 //
 // Editor Mult Line: CallBack
 //
-void call_editor (ARG *a) {
+void call_editor (int msg) {
     char buf [1024];
 
-    if (a->msg == MSG_MOUSE_DOWN) {
+    if (msg == MSG_MOUSE_DOWN) {
         if (console)
             app_ObjectSetTop (console);
         return;
@@ -200,7 +200,7 @@ void call_editor (ARG *a) {
     //
     // CTRL + A: complete text
     //
-    if (key_ctrl && a->key == CTRL_KEY_A) {
+    if (key_ctrl && key == CTRL_KEY_A) {
         DATA_EDITOR *data = app_GetData(editor);
         FILE *fp;
         sprintf (buf, "%scomplete", EDITOR_DIR); // c:\editor\complete  OR  /usr/editor/complete
@@ -272,7 +272,7 @@ void call_editor (ARG *a) {
     //
     // CTRL + S: Save the text
     //
-    if (key_ctrl && a->key == CTRL_KEY_S) {
+    if (key_ctrl && key == CTRL_KEY_S) {
         DATA_EDITOR *data = app_GetData (editor);
         if (data) {
             if (data->FileName[0]==0) {
@@ -306,7 +306,7 @@ void call_editor (ARG *a) {
     //
     // CTRL + O: Insert The Text File ( C:\editor\o or /usr/editor/o ) in EDITOR.
     //
-    if (key_ctrl && a->key == CTRL_KEY_O) {
+    if (key_ctrl && key == CTRL_KEY_O) {
         DATA_EDITOR *data = app_GetData (editor);
         int c;
         FILE *fp;
@@ -331,8 +331,8 @@ void call_editor (ARG *a) {
     }
 }
 
-void call_shell (ARG *a) {
-    if (a->key == SDLK_RETURN && shell) {
+void call_shell (int msg) {
+    if (key == SDLK_RETURN && shell) {
         FILE *fp;
         char buf[1024];
         sprintf (buf, "%s 2>&1", app_EditGetText (shell));
@@ -369,7 +369,7 @@ void console_store (void) {
 }
 */
 
-void call_bt_about (ARG *a) {
+void call_bt_about (int msg) {
 #define WIDTH   450
 #define HEIGHT  300
     SDL_Event e;
@@ -386,6 +386,7 @@ void call_bt_about (ARG *a) {
     DrawText (screen, "CTRL + V: Paste the text", x+15+16, y+110, COLOR_ORANGE);
     DrawText (screen, "CTRL + A: Complete Words from MENU List", x+15+16, y+130, COLOR_ORANGE);
     DrawText (screen, "CTRL + Y: Delete Line", x+15+16, y+150, COLOR_ORANGE);
+    DrawText (screen, "CTRL + R: Run Script Text", x+15+16, y+170, COLOR_ORANGE);
     //
     DrawText (screen, "https://github.com/gokernel2017/DreamEditor", x+15, y+250, COLOR_ORANGE);
     DrawText (screen, "BY: Francisco - gokernel@hotmail.com", x+15, y+270, COLOR_ORANGE);
@@ -415,7 +416,7 @@ void CreateInterface (void) {
         app_EditorSetFileName (editor, FileName);
     } else {
         editor = app_NewEditor (NULL, ID_EDITOR, 3, 33,
-        " Dream Editor:\n   CTRL + S: Save The Text\n",
+        "\n // Expression:\n\n   10 * 20 + 3 * 5; // 215\n\n // CTRL + R: To Run Script.\n",
         50000
         );
     }
@@ -442,8 +443,11 @@ void Finalize (void) {
     SEND (editor, MSG_FREE, 0);
 }
 
-int main (int argc, char **argv) {
+void Hello_World (int a, int b) {
+    printf ("Hello World | CALL FUNCTION | a + b = %d\n", a+b);
+}
 
+int main (int argc, char **argv) {
     if (app_Init(argc,argv)) {
 
         if (argc >= 2 && (text = app_FileOpen(argv[1])) != NULL) {

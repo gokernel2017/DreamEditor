@@ -25,7 +25,8 @@
 struct OBJECT { // opaque struct
     void      *data; // any information about object
     int       (*proc) (OBJECT *o, int msg, int value);
-    void      (*call) (ARG *arg); // user function callback
+    void      (*call) (int msg); // user function callback
+    VM        *vm_call;
     short     x;
     short     y;
     SDL_Rect  rect; //  real position from the gui ... this is computed from parent
@@ -56,8 +57,11 @@ static void app_UpdatePos (OBJECT *obj);
 SDL_Surface *screen;
 int key_ctrl;
 int key_shift;
+int key;
+int keysym;
 int mx, my; // mouse_x, mouse_y
 
+static int running = 0, id_object;
 DATA_DIALOG dialog_data;
 
 // Dialog:
@@ -81,21 +85,10 @@ static OBJECT * object_focus = NULL; // focused object
 static OBJECT * object_click = NULL;
 //-----------------------------------------------
 
-//-----------------------------------------------
-// OBJECT Callback Function Argument
-//
-//   void (*call) (ARG *a);
-//
-//   OBJECT->call (&arg);
-//-----------------------------------------------
-//
-static ARG  arg;
-
 static int
     state,
     quit,
-    dialog_quit, dialog_ret,
-    key
+    dialog_quit, dialog_ret
     ;
 
 void _call_ (void) {
@@ -153,8 +146,6 @@ void app_UpdateGui (OBJECT *o) {
     case SDL_MOUSEMOTION:
         mx = ev.motion.x;
         my = ev.motion.y;
-        arg.x = mx;
-        arg.y = my;
 
         //---------------------------------------
         // set: mouse_find
@@ -177,8 +168,7 @@ void app_UpdateGui (OBJECT *o) {
                 SDL_UpdateRect (screen, mouse_find->rect.x, mouse_find->rect.y, mouse_find->rect.w, mouse_find->rect.h);
                 // send callback : MSG_ENTER
                 if (ret == RET_CALL && mouse_find->call) {
-                    arg.msg = MSG_ENTER;
-                    mouse_find->call (&arg);
+                    mouse_find->call (MSG_ENTER);
                 }
             }
             // MSG_LEAVE
@@ -188,8 +178,7 @@ void app_UpdateGui (OBJECT *o) {
                 SDL_UpdateRect (screen, current->rect.x, current->rect.y, current->rect.w, current->rect.h);
                 // send callback : MSG_LEAVE
                 if (ret == RET_CALL && current->call) {
-                    arg.msg = MSG_LEAVE;
-                    current->call (&arg);
+                    current->call (MSG_LEAVE);
                 }
             }
 
@@ -227,13 +216,9 @@ void app_UpdateGui (OBJECT *o) {
                 SDL_UpdateRect (screen, object_focus->rect.x, object_focus->rect.y, object_focus->rect.w, object_focus->rect.h);
             }
             if (current->proc (current, MSG_MOUSE_DOWN, 0) == RET_CALL && current->call) {
-                arg.msg = MSG_MOUSE_DOWN;
-                arg.id = current->id;
-                current->call (&arg);
+                id_object = current->id;
+                current->call (MSG_MOUSE_DOWN);
             }
-
-//printf ("ID: %d\n", current->id);
-
         }// if (current)
 
         break;// case SDL_MOUSEBUTTONDOWN:
@@ -241,10 +226,17 @@ void app_UpdateGui (OBJECT *o) {
     case SDL_MOUSEBUTTONUP:
 
         if (object_click && object_click == current) {
-            if (object_click->proc (object_click, MSG_MOUSE_UP, 0) == RET_CALL && object_click->call) {
-                arg.msg = MSG_MOUSE_UP;
-                arg.id = object_click->id;
-                object_click->call (&arg);
+            if (object_click->proc (object_click, MSG_MOUSE_UP, 0) == RET_CALL) {
+                id_object = object_click->id;
+                if (object_click->call) {
+                    object_click->call (MSG_MOUSE_UP);
+                }
+/*
+                if (object_click->vm_call) {
+                    vm_Run (object_click->vm_call);
+                    //object_click->call (MSG_MOUSE_UP);
+                }
+*/
             }
         }
         object_click = NULL;
@@ -252,6 +244,7 @@ void app_UpdateGui (OBJECT *o) {
         break;// case SDL_MOUSEBUTTONUP:
 
     case SDL_KEYDOWN:
+        keysym = ev.key.keysym.sym;
         if ((key = ev.key.keysym.unicode)==0)
             key = ev.key.keysym.sym;
 
@@ -277,9 +270,7 @@ void app_UpdateGui (OBJECT *o) {
                 object_focus->proc (object_focus, MSG_DRAW, 1);
                 SDL_UpdateRect (screen, object_focus->rect.x, object_focus->rect.y, object_focus->rect.w, object_focus->rect.h);
                 if (ret == RET_CALL && object_focus->call) {
-                    arg.msg = MSG_KEY;
-                    arg.key = key;
-                    object_focus->call (&arg);
+                    object_focus->call (MSG_KEY);
                 }
             }
         }
@@ -320,6 +311,7 @@ void app_Run (void (*call) (void)) {
         CallBack = call;
 
     app_UpdatePos (root);
+    running = 1;
     state = RET_REDRAW_ALL;
     quit = 0;
 
@@ -360,6 +352,7 @@ OBJECT * app_ObjectNew (
   return NULL;
     o->proc = proc;
     o->call = NULL;
+    o->vm_call = NULL;
     o->x = x;
     o->y = y;
     o->rect.w = w;
@@ -416,6 +409,8 @@ void app_ObjectAdd (OBJECT *o, OBJECT *sub) {
             aux->next = sub;
         }
         state = RET_REDRAW_ALL;
+        if (running)
+            app_UpdatePos (o);
     }
 }
 
@@ -506,7 +501,7 @@ void app_SetFocus (OBJECT *o) {
     }
 }
 
-void app_SetCall (OBJECT *o, void (*call) (ARG *arg)) {
+void app_SetCall (OBJECT *o, void (*call) (int msg)) {
     if (o)
         o->call = call;
 }
@@ -549,9 +544,9 @@ int proc_dialog (OBJECT *o, int msg, int value) {
     return 0;
 }
 
-void call_dialog (ARG *arg) {
+void call_dialog (int msg) {
     dialog_quit = 1;
-    dialog_ret = arg->id;
+    dialog_ret = id_object;
 }
 
 int app_ShowDialog (char *text, int ok) {
@@ -622,13 +617,13 @@ int app_ShowDialog (char *text, int ok) {
     return dialog_ret;
 }
 
-void call_edit_file_dialog (ARG *a) {
-    if (a->key == SDLK_RETURN) {
+void call_edit_file_dialog (int msg) {
+    if (key == SDLK_RETURN) {
         dialog_ret = 1;
         dialog_quit = 1;
     }
     else
-    if (a->key == SDLK_ESCAPE) {
+    if (key == SDLK_ESCAPE) {
         dialog_ret = 0;
         dialog_quit = 1;
     }

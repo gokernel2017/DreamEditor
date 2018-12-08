@@ -29,6 +29,10 @@
     #include <unistd.h>
 #endif
 
+// LANGUAGE:
+#include "lang_lex.h"
+#include "lang_vm.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,7 +41,7 @@ extern "C" {
 //---------------  DEFINE / ENUM  ---------------
 //-----------------------------------------------
 //
-#define LIBIMPORT         extern
+//#define LIBIMPORT         extern
 #define BMP               SDL_Surface
 #define SEND              app_SendMessage
 //
@@ -92,18 +96,26 @@ enum {
 //    OBJECT_TYPE_MENU
     OBJECT_TYPE_CONSOLE
 };
+enum {
+    FUNC_TYPE_NATIVE_C = 0,
+    FUNC_TYPE_VM,
+    FUNC_TYPE_MODULE     // .dll | .so
+};
 
 //-----------------------------------------------
 //-------------------  STRUCT  ------------------
 //-----------------------------------------------
 //
 typedef struct OBJECT       OBJECT; // opaque struct in file: "app.c"
-typedef struct ARG          ARG;    // OBJECT Function Callback Argument
+//typedef struct ARG          ARG;    // OBJECT Function Callback Argument
 typedef struct DATA_EDITOR  DATA_EDITOR;
 typedef struct TRect        TRect;
 typedef struct MENU         MENU;
 typedef struct MENU_ITEN    MENU_ITEN;
+// LANGUAGE:
+typedef struct TFunc        TFunc;
 
+/*
 struct ARG { // OBJECT Function Callback Argument
     int   msg;
     int   id;
@@ -111,6 +123,7 @@ struct ARG { // OBJECT Function Callback Argument
     int   y;
     int   key;
 };
+*/
 struct TRect {
     short   x,  y;
     short   w,  h;
@@ -151,6 +164,14 @@ struct DATA_EDITOR {
     int   saved;
     int   bg;         // bg color
 };
+struct TFunc {
+    char    *name;
+    char    *proto; // prototype
+    UCHAR   *code;  // the function on JIT MODE | or VM in VM MODE
+    int     type;   // FUNC_TYPE_NATIVE_C = 0, FUNC_TYPE_COMPILED, FUNC_TYPE_VM
+    int     len;
+    TFunc   *next;
+};
 
 //-----------------------------------------------
 //-----------------  VARIABLES  -----------------
@@ -159,6 +180,8 @@ struct DATA_EDITOR {
 LIBIMPORT SDL_Surface *screen;
 LIBIMPORT int key_ctrl;
 LIBIMPORT int key_shift;
+LIBIMPORT int key;
+LIBIMPORT int keysym;
 LIBIMPORT int mx, my; // mouse_x, mouse_y
 
 //-----------------------------------------------
@@ -179,7 +202,7 @@ LIBIMPORT void      app_SetFocus      (OBJECT *o);
 LIBIMPORT void      app_SetSize       (OBJECT *o, int w, int h);
 LIBIMPORT void      app_SetVisible    (OBJECT *o, int visible);
 LIBIMPORT int       app_Focused       (OBJECT *o);
-LIBIMPORT void      app_SetCall       (OBJECT *o, void (*call) (ARG *arg));
+LIBIMPORT void      app_SetCall       (OBJECT *o, void (*call) (int msg));
 LIBIMPORT void      app_ObjectAdd     (OBJECT *o, OBJECT *sub);
 LIBIMPORT void      app_ObjectUpdate  (OBJECT *o); // draw and display
 LIBIMPORT void      app_ObjectSetTop  (OBJECT *o);
@@ -243,6 +266,22 @@ LIBIMPORT void  DrawWindow  (SDL_Rect *rect);
 // ... TEMP ...
 //
 LIBIMPORT void app_PrintData (OBJECT *o);
+
+
+//-----------------------------------------------
+//------------------  LANGUAGE  -----------------
+//-----------------------------------------------
+//
+LIBIMPORT VM    * app_LangInit  (unsigned int size);
+LIBIMPORT int     app_LangParse (LEXER *l, VM *vm, char *text, char *name);
+LIBIMPORT void    CreateVarLong (char *name, int value);
+LIBIMPORT TFunc * FuncFind      (char *name);
+LIBIMPORT int     VarFind       (char *name);
+// erro:
+LIBIMPORT void    Erro          (char *format, ...);
+LIBIMPORT char  * ErroGet       (void);
+LIBIMPORT void    ErroReset     (void);
+
 
 #ifdef __cplusplus
 }
