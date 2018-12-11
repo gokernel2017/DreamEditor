@@ -56,17 +56,17 @@ VALUE * vm_Run (VM *vm) {
     for (;;) {
     switch (vm->code[vm->ip++]) {
 
-case OP_PUSH_LONG:
+case OP_PUSH_LONG: {
     sp++;
     sp->l = *(long*)(vm->code+vm->ip);
-    vm->ip += 4;
-    continue;
+    vm->ip += sizeof(long);
+    } continue;
 
-case OP_PUSH_FLOAT:
+case OP_PUSH_FLOAT: {
     sp++;
     sp->f = *(float*)(vm->code+vm->ip);
-    vm->ip += 4;
-    continue;
+    vm->ip += sizeof(float);
+    } continue;
 
 case OP_PUSH_VAR: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
@@ -96,10 +96,10 @@ case OP_DIV_FLOAT: sp[-1].f /= sp[0].f; sp--; continue;
 case OP_ADD_FLOAT: sp[-1].f += sp[0].f; sp--; continue;
 case OP_SUB_FLOAT: sp[-1].f -= sp[0].f; sp--; continue;
 
-case OP_POP_EAX:
+case OP_POP_EAX: {
     eax = sp[0];
     sp--;
-    continue;
+    } continue;
 
 case OP_PRINT_EAX: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
@@ -116,8 +116,7 @@ case OP_CALL:
     {
     int (*func)() = *(void**)(vm->code+vm->ip);
     float (*func_float)() = *(void**)(vm->code+vm->ip);
-//    a->ip += sizeof(void*);
-    vm->ip += 4;
+    vm->ip += sizeof(void*);
     UCHAR arg_count = (UCHAR)(vm->code[vm->ip++]);
     UCHAR return_type = (UCHAR)(vm->code[vm->ip++]);
 
@@ -269,12 +268,12 @@ void emit_halt (VM *vm) {
 void emit_push_long (VM *vm, long value) {
     *vm->p++ = OP_PUSH_LONG;
     *(long*)vm->p = value;
-    vm->p += 4;
+    vm->p += sizeof(long);
 }
 void emit_push_float (VM *vm, float value) {
     *vm->p++ = OP_PUSH_FLOAT;
     *(float*)vm->p = value;
-    vm->p += 4;
+    vm->p += sizeof(float);
 }
 
 void emit_push_var (VM *vm, UCHAR i) {
@@ -314,8 +313,7 @@ void emit_print_eax (VM *vm, UCHAR type) {
 void emit_call (VM *vm, void *func, UCHAR arg_count, UCHAR return_type) {
     *vm->p++ = OP_CALL;
     *(void**)vm->p = func;
-//    a->p += sizeof(void*);
-    vm->p += 4;
+    vm->p += sizeof(void*);
     *vm->p++ = arg_count;
     *vm->p++ = return_type;
 }

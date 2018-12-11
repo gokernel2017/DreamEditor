@@ -23,7 +23,7 @@
 
 #define DREAM_VERSION         0
 #define DREAM_VERSION_SUB     91
-#define DREAM_VERSION_PATCH   0
+#define DREAM_VERSION_PATCH   1
 
 #define ID_BUTTON1    1000  // FuncList
 #define ID_BUTTON2    1001  // Templat
@@ -455,8 +455,6 @@ int main (int argc, char **argv) {
             printf ("agora STR ponteiro %p = %d\n", &text, (int)text);
         }
         CreateInterface ();
-        app_PrintData(editor);
-printf ("cinza: %d\n", MRGB(100,100,100));
         app_Run (NULL);
         Finalize();
     }

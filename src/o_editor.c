@@ -195,8 +195,8 @@ int proc_editor (OBJECT *o, int msg, int value) {
     DATA_EDITOR *data = app_GetData (o);
 
     if (data==NULL) {
-        printf ("Editor Data NOT FOUND\n");
-        printf ("data ponteiro %p\n", &data);
+//        printf ("Editor Data NOT FOUND\n");
+//        printf ("data ponteiro %p\n", &data);
         return 0;
     }
 
@@ -555,7 +555,8 @@ int proc_editor (OBJECT *o, int msg, int value) {
 
     case MSG_FREE:
         if (data) {
-printf ("MSG FREE --- data ponteiro %p\n", &data);
+//printf ("MSG FREE --- data ponteiro %p\n", &data);
+
 //            free (data->text);
 //            data->text = NULL;
 //            free (data);
@@ -579,8 +580,6 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
 
     if ((data = (DATA_EDITOR*)malloc(sizeof(DATA_EDITOR))) == NULL)
   return NULL;
-
-    printf ("EDITOR data ponteiro %p\n", &data);
 
     data->text = (char*) malloc (size);
     data->len = 0;

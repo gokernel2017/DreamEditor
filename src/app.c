@@ -372,11 +372,6 @@ void * app_GetData (OBJECT *o) {
     return o->data;
 }
 
-void app_PrintData (OBJECT *o) {
-    printf ("OBJECT DATA ponteiro %p\n", &o->data);
-}
-
-
 void app_SetDataNULL (OBJECT *o) {
     o->data = NULL;
 }

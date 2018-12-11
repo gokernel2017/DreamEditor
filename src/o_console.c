@@ -308,7 +308,6 @@ OBJECT * app_NewConsole (OBJECT *parent, int id, int x, int y, char *text) {
 
     app_ObjectAdd (parent, o);
 
-printf ("CONSOLE ITEN: %d\n", sizeof(ITEN));
     return o;
 }
 
