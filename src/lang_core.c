@@ -28,6 +28,7 @@ static void   atom          (LEXER *l, VM *vm);
 static F_STRING *fs_new (char *s);
 //
 void lib_info (int arg);
+void lib_printf (char *format, ...);
 //
 // Set VM CallBack Function
 //
@@ -38,9 +39,11 @@ static TFunc stdlib[]={
   // char*            char*       UCHAR*                  int   int   TFunc*
   // name             proto       code                    type  len   next
   //--------------------------------------------------------------------------
+  { "info",           "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
+  { "printf",         "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
+  //
   { "SetCall",        "0ps",      (UCHAR*)lib_SetCall,  0,    0,    NULL },
   { "app_NewButton",  "ppiiis",   (UCHAR*)app_NewButton,  0,    0,    NULL },
-  { "info",           "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
   { NULL, NULL, NULL, 0, 0, NULL }
 };
 
@@ -251,7 +254,7 @@ static void atom (LEXER *l, VM *a) { // expres
             var_type = TYPE_FLOAT;
 
         if (var_type==TYPE_FLOAT) {
-//            emit_push_float(a, atof(l->token));
+            emit_push_float(a, atof(l->token));
         } else {
             emit_push_long(a, atoi(l->token));
         }
@@ -660,6 +663,33 @@ static F_STRING *fs_new (char *s) {
     fs = n;
 
     return n;
+}
+
+void lib_printf (char *format, ...) {
+    char msg[1024] = { 0 };
+    register unsigned int i;
+    va_list ap;
+    int new_line = 0;
+
+    va_start (ap,format);
+    vsprintf (msg, format, ap);
+    va_end (ap);
+
+    for (i = 0; i < strlen(msg); i++) {
+        if (msg[i] == '\\' && msg[i+1] == 'n') { // new line
+            putc (10, stdout); // new line
+            new_line = 1;
+            i++;
+        }
+        else if (msg[i] == '\\' && msg[i+1] == 't') { // tab
+            putc ('\t', stdout); // tab
+            i++;
+        } else {
+            putc (msg[i], stdout);
+        }
+    }
+    if (new_line==0)
+        printf ("\n");
 }
 
 void lib_info (int arg) {
