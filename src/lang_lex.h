@@ -51,6 +51,7 @@ LIBIMPORT void Erro (char *format, ...);
 
 enum {
     TOK_INT = 255,
+    TOK_OBJECT,
     TOK_FLOAT,
     TOK_VAR,
     TOK_IF,

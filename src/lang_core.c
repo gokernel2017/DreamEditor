@@ -11,6 +11,8 @@
 #define STR_ERRO_SIZE   1024
 
 static void   word_int      (LEXER *l, VM *vm);
+static void   word_OBJECT   (LEXER *l, VM *vm);
+static void   word_function (LEXER *l, VM *vm);
 //
 static int    stmt          (LEXER *l, VM *vm);
 static int    see           (LEXER *l);
@@ -23,15 +25,20 @@ static void   expr2         (LEXER *l, VM *vm);
 static void   expr3         (LEXER *l, VM *vm);
 static void   atom          (LEXER *l, VM *vm);
 //-----------------------------------------------
+static F_STRING *fs_new (char *s);
 //
 void lib_info (int arg);
+//
+// Set VM CallBack Function
+//
+void lib_SetCall (OBJECT *o, char *name);
 
-//app_NewButton  (OBJECT *parent, int id, int x, int y, char *text);
 static TFunc stdlib[]={
   //--------------------------------------------------------------------------
   // char*            char*       UCHAR*                  int   int   TFunc*
   // name             proto       code                    type  len   next
   //--------------------------------------------------------------------------
+  { "SetCall",        "0ps",      (UCHAR*)lib_SetCall,  0,    0,    NULL },
   { "app_NewButton",  "ppiiis",   (UCHAR*)app_NewButton,  0,    0,    NULL },
   { "info",           "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
   { NULL, NULL, NULL, 0, 0, NULL }
@@ -40,17 +47,28 @@ static TFunc stdlib[]={
 int erro; // global
 TVar Gvar [GVAR_SIZE]; // global:
 
+static TFunc  * Gfunc = NULL;
+static VM     * vm_function = NULL;
+static ARG      argument [20];
+static F_STRING * fs = NULL;
+
 static int
+    is_function,
+    is_recursive,
+    local_count,
+    argument_count,
     main_variable_type,
     var_type
     ;
 
 static char
-    strErro [STR_ERRO_SIZE]
+    strErro [STR_ERRO_SIZE],
+    func_name [100]
     ;
 
 static void expression (LEXER *l, VM *vm) {
     if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok=='(') {
+        int i;
         TFunc *fi;
         int next;
 
@@ -69,6 +87,35 @@ static void expression (LEXER *l, VM *vm) {
             execute_call(l, vm, fi);
       return;
         }
+
+        if ((i = VarFind (l->token)) != -1) {
+
+            main_variable_type = var_type = Gvar[i].type;
+
+            if (next=='=') {
+                lex_save(l); // save the lexer position
+                lex(l); // =
+                if (lex(l)==TOK_ID) {
+
+                    //
+                    // call a function with return:
+                    //   i = function_name (...);
+                    //
+                    if ((fi = FuncFind(l->token)) != NULL) {
+                        execute_call (l, vm, fi);
+
+                        // The function return is stored in variable VALUE( eax ) ... see in file: vm.c
+                        emit_mov_eax_var(vm,i);
+
+                  return;
+                    }//: if ((fi = FuncFind(l->token)) != NULL)
+
+                }
+                lex_restore (l); // restore the lexer position
+
+            }// if (next=='=')
+
+        }//: if ((i = VarFind (l->token)) != -1)
 
         //---------------------------------------
         // Expression types:
@@ -156,8 +203,42 @@ static void expr3 (LEXER *l, VM *vm) { // '('
 }
 static void atom (LEXER *l, VM *a) { // expres
 
+    if (l->tok==TOK_STRING) {
+        F_STRING *s = fs_new (l->token);
+        if (s) {
+            emit_push_string (a, s->s);
+        }
+        lex(l);
+  return;
+    }
+
     if (l->tok==TOK_ID) {
         int i;
+/*
+        TFunc *fi;
+        //
+        // push the pointer of function:
+        //
+        // NO CALL THE FUNCTION
+        //
+        if ((fi = FuncFind (l->token)) != NULL) {
+            if (see(l) == '(') {
+                // "execute the function"
+//                execute_call (l,a,fi);
+                // and ... push the result
+//                emit_push_eax(a);
+//                lex (l);
+            } else if (see(l) != '(') {
+                //
+                // push the real function pointer
+                //
+                emit_mov_var_reg (a, &fi->code, EAX);
+                emit_push_eax(a);
+                lex (l);
+            } 
+        }
+        else
+*/
         if ((i = VarFind(l->token)) !=-1) {
             var_type = Gvar[i].type;
             emit_push_var (a, i);
@@ -200,20 +281,19 @@ static int stmt (LEXER *l, VM *vm) {
         //----------------------------------------------------
         return 1;
     case TOK_INT:      word_int      (l,vm); return 1;
-/*
-    case TOK_FLOAT:    word_float    (l,a); return 1;
-    case TOK_VAR:      word_var      (l,a); return 1;
-    case TOK_IF:       word_if       (l,a); return 1;
-    case TOK_FOR:      word_for      (l,a); return 1;
-    case TOK_BREAK:    word_break    (l,a); return 1;
-    case TOK_RETURN:   word_return   (l,a); return 1;
-    case TOK_FUNCTION: word_function (l,a); return 1;
-    case TOK_MODULE:   word_module   (l,a); return 1;
-    case TOK_IMPORT:   word_import   (l,a); return 1;
-    case TOK_INCLUDE:  word_INCLUDE  (l,a); return 1;
-    case TOK_DEFINE:   word_DEFINE   (l,a); return 1;
-    case TOK_IFDEF:    word_IFDEF    (l,a); return 1;
-*/
+    case TOK_OBJECT:   word_OBJECT   (l,vm); return 1;
+//    case TOK_FLOAT:    word_float    (l,a); return 1;
+//    case TOK_VAR:      word_var      (l,a); return 1;
+//    case TOK_IF:       word_if       (l,a); return 1;
+//    case TOK_FOR:      word_for      (l,a); return 1;
+//    case TOK_BREAK:    word_break    (l,a); return 1;
+//    case TOK_RETURN:   word_return   (l,a); return 1;
+    case TOK_FUNCTION: word_function (l,vm); return 1;
+//    case TOK_MODULE:   word_module   (l,a); return 1;
+//    case TOK_IMPORT:   word_import   (l,a); return 1;
+//    case TOK_INCLUDE:  word_INCLUDE  (l,a); return 1;
+//    case TOK_DEFINE:   word_DEFINE   (l,a); return 1;
+//    case TOK_IFDEF:    word_IFDEF    (l,a); return 1;
     default:           expression    (l,vm); return 1;
     case '}': l->level--; return 1;
     case ';':
@@ -288,7 +368,7 @@ static void execute_call (LEXER *l, VM *vm, TFunc *func) {
         //
         // here: fi->code ==  ASM*
         //
-//        emit_call_vm (vm, (VM*)(func->code), (UCHAR)count, return_type);
+        emit_call_vm (vm, (VM*)(func->code), (UCHAR)count, return_type);
 
     } else {
 
@@ -317,12 +397,166 @@ static void word_int (LEXER *l, VM *vm) {
 
 }// word_int()
 
+static void word_OBJECT (LEXER *l, VM *vm) {
+    while (lex(l)) {
+        if (l->tok==TOK_ID) {
+            CreateVarOBJECT (l->token);
+        }
+        if (l->tok == ';') break;
+    }
+    if (l->tok != ';') Erro ("ERRO: The word(OBJECT) need the char(;) on the end\n");
+
+}// word_OBJECT ()
+
+
+static void word_function (LEXER *l, VM *a) {
+    TFunc *func;
+    char name[255], proto[255] = { '0', 0, 0, 0, 0, 0, 0, 0 };
+    int i;
+
+    lex(l);
+
+    strcpy (name, l->token);
+
+    // if exist ... return
+    //
+    if (FuncFind(name)!=NULL) {
+        int brace = 0;
+
+        printf ("Function exist: ... REBOBINANDO '%s'\n", name);
+
+        while (lex(l) && l->tok != ')');
+
+        if (see(l)=='{') { } else Erro ("word(if) need start block: '{'\n");
+
+        while (lex(l)){
+            if (l->tok == '{') brace++;
+            if (l->tok == '}') brace--;
+            if (brace <= 0) break;
+        }
+
+  return;
+    }
+
+    // PASSA PARAMETROS ... IMPLEMENTADA APENAS ( int ) ... AGUARDE
+    //
+    // O analizador de expressao vai usar esses depois...
+    //
+    // VEJA EM ( expr3() ):
+    // ---------------------
+    // Funcoes usadas:
+    //     ArgumentFind();
+    //     asm_push_argument();
+    // ---------------------
+    //
+    argument_count = 0;
+    while (lex(l)) {
+
+        if (l->tok==TOK_INT) {
+            argument[argument_count].type[0] = TYPE_LONG; // 0
+            //strcpy (argument[argument_count].type, "int");
+            if (lex(l)==TOK_ID) {
+                strcpy (argument[argument_count].name, l->token);
+                strcat (proto, "i");
+                argument_count++;
+            }
+        }
+//        else if (l->tok==TOK_FLOAT) {
+//            argument[argument_count].type[0] = TYPE_FLOAT; // 1
+            //strcpy (argument[argument_count].type, "int");
+//            if (lex(l)==TOK_ID) {
+//                strcpy (argument[argument_count].name, l->token);
+//                strcat (proto, "f");
+//                argument_count++;
+//            }
+//        }
+        else if (l->tok==TOK_ID) {
+            argument[argument_count].type[0] = TYPE_UNKNOW;
+            strcpy (argument[argument_count].name, l->token);
+            strcat (proto, "i");
+            argument_count++;
+        }
+
+        if (l->tok=='{') break;
+    }
+    if (argument_count==0) {
+        proto[1] = '0';
+        proto[2] = 0;
+    }
+    if (l->tok=='{') l->pos--; else { Erro("Word Function need char: '{'"); return; }
+
+    is_function = 1;
+    local_count = 0;
+    strcpy (func_name, name);
+
+    // compiling to buffer ( f ):
+    //
+    vm_Reset (vm_function);
+    emit_begin (vm_function);
+    //stmt (l,a); // here start from char: '{'
+    stmt (l,vm_function); // here start from char: '{'
+    emit_end (vm_function);
+
+    if (erro) return;
+
+    int len = vm_GetLen (vm_function);
+
+    VM *vm;
+    if ((vm = vm_New (len + 5)) != NULL) {
+        // new function:
+        //
+        func = (TFunc*) malloc (sizeof(TFunc));
+        func->name = strdup (func_name);
+        func->proto = strdup (proto);
+        func->type = FUNC_TYPE_VM;
+        func->len = len;
+        // NOW: copy the buffer ( f ):
+        for (i=0;i<func->len;i++) {
+            vm->code[i] = vm_function->code[i];
+        }
+        vm->code[func->len  ] = 0;
+        vm->code[func->len+1] = 0;
+        vm->code[func->len+2] = 0;
+/*
+        //-------------------------------------------
+        // HACKING ... ;)
+        // Resolve Recursive:
+        // change 4 bytes ( func_null ) to this
+        //-------------------------------------------
+        if (is_recursive)
+        for (i=0;i<func->len;i++) {
+            if (vm->code[i]==OP_CALL && *(void**)(vm->code+i+1) == func_null) {
+                vm->code[i] = OP_CALL_VM;     //<<<<<<<  change here  >>>>>>>
+                *(void**)(vm->code+i+1) = vm; //<<<<<<<  change here  >>>>>>>
+                i += 5;
+            }
+        }
+*/
+printf ("Criando Function(%s)\n", func_name);
+
+        func->code = (UCHAR*)vm;
+
+    } else {
+        is_function = is_recursive = argument_count = *func_name = 0;
+        return;
+    }
+
+    // add on top:
+    func->next = Gfunc;
+    Gfunc = func;
+
+    is_function = is_recursive = argument_count = *func_name = 0;
+
+}//:word_function ()
+
+
 VM * app_LangInit (unsigned int size) {
     VM *vm = NULL;
     static int init = 0;
     if (init) return NULL;
     init = 1;
-    if ((vm = vm_New(size)) == NULL) return NULL;
+    if ((vm          = vm_New(size)) == NULL) return NULL;
+    if ((vm_function = vm_New(size)) == NULL) return NULL;
     return vm;
 }
 
@@ -342,6 +576,23 @@ void CreateVarLong (char *name, int value) {
         v->info = NULL;
     }
 }
+void CreateVarOBJECT (char *name) {
+    TVar *v = Gvar;
+    int i = 0;
+    while (v->name) {
+        if (!strcmp(v->name, name))
+      return;
+        v++;
+        i++;
+    }
+    if (i < GVAR_SIZE) {
+        v->name = strdup(name);
+        v->type = TYPE_POINTER;
+        v->value.p = NULL;
+        v->info = NULL;
+    }
+}
+
 
 TFunc *FuncFind (char *name) {
     // array:
@@ -351,7 +602,6 @@ TFunc *FuncFind (char *name) {
       return lib;
         lib++;
     }
-/*
     // linked list:
     TFunc *func = Gfunc;
     while (func) {
@@ -359,7 +609,6 @@ TFunc *FuncFind (char *name) {
       return func;
         func = func->next;
     }
-*/
     return NULL;
 }
 
@@ -391,6 +640,28 @@ static int see (LEXER *l) {
     return 0;
 }
 
+static F_STRING *fs_new (char *s) {
+    static int count = 0;
+    F_STRING *p = fs, *n;
+
+    while (p) {
+        if (!strcmp(p->s,s)) return p;
+        p = p->next;
+    }
+
+    if ((n = (F_STRING*)malloc(sizeof(F_STRING)))==NULL) return NULL;
+    n->s = strdup(s);
+
+//printf ("FIXED: %p\n", &n->s);
+
+    n->i = count++;
+    // add on top
+    n->next = fs;
+    fs = n;
+
+    return n;
+}
+
 void lib_info (int arg) {
     switch (arg) {
     case 1: {
@@ -408,6 +679,23 @@ void lib_info (int arg) {
 
     default:
         printf ("USAGE(%d): info(1);\n\nInfo Options:\n 1: Variables\n 2: Functions\n 3: Defines\n 4: Words\n",arg);
+    }
+}
+
+//
+// Set VM CallBack Function
+//
+void lib_SetCall (OBJECT *o, char *name) {
+    if (o && name) {
+        // linked list:
+        TFunc *func = Gfunc;
+        while (func) {
+            if ((func->name[0]==name[0]) && !strcmp(func->name, name)) {
+                app_SetCallVM (o, (VM*)(func->code));
+                break;
+            }
+            func = func->next;
+        }
     }
 }
 

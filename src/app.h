@@ -114,16 +114,8 @@ typedef struct MENU         MENU;
 typedef struct MENU_ITEN    MENU_ITEN;
 // LANGUAGE:
 typedef struct TFunc        TFunc;
+typedef struct F_STRING     F_STRING;
 
-/*
-struct ARG { // OBJECT Function Callback Argument
-    int   msg;
-    int   id;
-    int   x;
-    int   y;
-    int   key;
-};
-*/
 struct TRect {
     short   x,  y;
     short   w,  h;
@@ -172,6 +164,16 @@ struct TFunc {
     int     len;
     TFunc   *next;
 };
+struct F_STRING {
+    char *s;
+    int   i;
+    F_STRING *next;
+}; // fixed string
+typedef struct {
+    // type[0] := '-' ... Is EVENT
+    char  type[20]; //  "int", "float", "data_struct"
+    char  name[20];
+}ARG;
 
 //-----------------------------------------------
 //-----------------  VARIABLES  -----------------
@@ -203,6 +205,7 @@ LIBIMPORT void      app_SetSize       (OBJECT *o, int w, int h);
 LIBIMPORT void      app_SetVisible    (OBJECT *o, int visible);
 LIBIMPORT int       app_Focused       (OBJECT *o);
 LIBIMPORT void      app_SetCall       (OBJECT *o, void (*call) (int msg));
+LIBIMPORT void      app_SetCallVM     (OBJECT *o, VM *vm);
 LIBIMPORT void      app_ObjectAdd     (OBJECT *o, OBJECT *sub);
 LIBIMPORT void      app_ObjectUpdate  (OBJECT *o); // draw and display
 LIBIMPORT void      app_ObjectSetTop  (OBJECT *o);
@@ -272,15 +275,16 @@ LIBIMPORT void app_PrintData (OBJECT *o);
 //------------------  LANGUAGE  -----------------
 //-----------------------------------------------
 //
-LIBIMPORT VM    * app_LangInit  (unsigned int size);
-LIBIMPORT int     app_LangParse (LEXER *l, VM *vm, char *text, char *name);
-LIBIMPORT void    CreateVarLong (char *name, int value);
-LIBIMPORT TFunc * FuncFind      (char *name);
-LIBIMPORT int     VarFind       (char *name);
+LIBIMPORT VM    * app_LangInit    (unsigned int size);
+LIBIMPORT int     app_LangParse   (LEXER *l, VM *vm, char *text, char *name);
+LIBIMPORT void    CreateVarLong   (char *name, int value);
+LIBIMPORT void    CreateVarOBJECT (char *name);
+LIBIMPORT TFunc * FuncFind        (char *name);
+LIBIMPORT int     VarFind         (char *name);
 // erro:
-LIBIMPORT void    Erro          (char *format, ...);
-LIBIMPORT char  * ErroGet       (void);
-LIBIMPORT void    ErroReset     (void);
+LIBIMPORT void    Erro            (char *format, ...);
+LIBIMPORT char  * ErroGet         (void);
+LIBIMPORT void    ErroReset       (void);
 
 
 #ifdef __cplusplus

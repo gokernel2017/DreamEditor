@@ -19,35 +19,19 @@
 
 #define STACK_SIZE    1024
 
-typedef struct VM_label VM_label;
-typedef struct VM_jump  VM_jump;
-
-struct VM { // opaque struct
-    UCHAR     *p;
-    UCHAR     *code;
-    VM_label  *label;
-    VM_jump   *jump;
-    int       size;
-    int       ip;
-    VALUE     arg [10];
-    //
-    TVar      *local;
-    int       local_count;
-};
-struct VM_label {
-    char      *name;
-    int       pos;
-    VM_label  *next;
-};
-struct VM_jump {
-    char      *name;
-    int       pos;
-    VM_jump   *next;
-};
-
 static VALUE    stack [STACK_SIZE];
 static VALUE  * sp = stack;
 static VALUE    eax;
+static int      callvm_stage2_position = 0;
+
+void callvm (VM *vm) {
+    vm_Run (vm);
+}
+
+void vm_simule_push_long (long value) {
+    sp++;
+    sp->l = value;
+}
 
 VALUE * vm_Run (VM *vm) {
 
@@ -72,9 +56,17 @@ case OP_PUSH_VAR: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
     sp++;
     switch (Gvar[i].type) {
-    case TYPE_LONG:  sp->l = Gvar[i].value.l; break;
-    case TYPE_FLOAT: sp->f = Gvar[i].value.f; break;
+    case TYPE_LONG:    sp->l = Gvar[i].value.l; break;
+    case TYPE_FLOAT:   sp->f = Gvar[i].value.f; break;
+    case TYPE_POINTER: sp->p = Gvar[i].value.p; break;
     }
+    } continue;
+
+case OP_PUSH_STRING: {
+    char *s = *(void**)(vm->code+vm->ip);
+    vm->ip += sizeof(void*);
+    sp++;
+    sp->s = s;
     } continue;
 
 case OP_POP_VAR: {
@@ -104,9 +96,15 @@ case OP_POP_EAX: {
 case OP_PRINT_EAX: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
     switch (i) {
-    case TYPE_LONG:   printf ("%ld\n", eax.l); break;
+    case TYPE_LONG:  printf ("%ld\n", eax.l); break;
     case TYPE_FLOAT: printf ("%f\n", eax.f); break;
     }
+    } continue;
+
+case OP_MOV_EAX_VAR: {
+    UCHAR i = (UCHAR)vm->code[vm->ip++];
+//    Gvar[i].value.l = eax.l;
+    Gvar[i].value = eax;
     } continue;
 
 //
@@ -184,6 +182,70 @@ case OP_CALL:
 
     } continue; //: case OP_CALL:
 
+
+// call a VM Function
+//
+case OP_CALL_VM: {
+    VM *local = *(void**)(vm->code+vm->ip);
+    vm->ip += sizeof(void*);
+    UCHAR arg_count = (UCHAR)(vm->code[vm->ip++]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
+    UCHAR return_type = (UCHAR)(vm->code[vm->ip++]);
+
+    switch(arg_count){
+    case 1: local->arg[0] = sp[0]; sp--; break;
+    case 2:
+        local->arg[0] = sp[-1];
+        local->arg[1] = sp[0];
+        sp -= 2;
+        break;
+    case 3:
+        local->arg[0] = sp[-2];
+        local->arg[1] = sp[-1];
+        local->arg[2] = sp[0];
+        sp -= 3;
+        break;
+    case 4:
+        local->arg[0] = sp[-3];
+        local->arg[1] = sp[-2];
+        local->arg[2] = sp[-1];
+        local->arg[3] = sp[0];
+        sp -= 4;
+        break;
+    case 5:
+        local->arg[0] = sp[-4];
+        local->arg[1] = sp[-3];
+        local->arg[2] = sp[-2];
+        local->arg[3] = sp[-1];
+        local->arg[4] = sp[0];
+        sp -= 5;
+        break;
+
+    }//: switch(arg_count)
+
+    if (local == vm) {
+
+        //-----------------------------------------------------------
+        //
+        // here is position the next opcode BEFORE of recursive function.
+        //
+        //-----------------------------------------------------------
+        //
+        callvm_stage2_position = local->ip;
+        vm->ip = 0;
+        //printf ("Todo antes da FUNCAO pos(%d) RECURSIVA CODE: %d\n", callvm_stage2_position, local->code[callvm_stage2_position]);
+    } else {
+        //printf ("PRIMEIRA VEZ EXECUTANDO\n");
+        callvm_stage2_position = 0;
+        local->ip = 0;
+    }
+
+    callvm (local);
+
+    local->ip = callvm_stage2_position;
+    //local->ip = a->ip - 5;
+
+    } continue; //: case OP_CALL_VM:
+
 case OP_HALT:
     vm->ip = 0;
     return sp;
@@ -233,6 +295,10 @@ void vm_Reset (VM *vm) {
     vm->ip = 0;
     vm->local_count = 0;
     //a->len = 0;
+}
+
+int vm_GetLen (VM *vm) {
+    return (vm->p - vm->code);
 }
 
 void emit_begin (VM *vm) {
@@ -310,8 +376,27 @@ void emit_print_eax (VM *vm, UCHAR type) {
     *vm->p++ = type;
 }
 
+void emit_mov_eax_var (VM *vm, UCHAR index) {
+    *vm->p++ = OP_MOV_EAX_VAR;
+    *vm->p++ = index;
+}
+
+void emit_push_string (VM *vm, char *s) {
+    *vm->p++ = OP_PUSH_STRING;
+    *(void**)vm->p = s;
+    vm->p += sizeof(void*);
+}
+
 void emit_call (VM *vm, void *func, UCHAR arg_count, UCHAR return_type) {
     *vm->p++ = OP_CALL;
+    *(void**)vm->p = func;
+    vm->p += sizeof(void*);
+    *vm->p++ = arg_count;
+    *vm->p++ = return_type;
+}
+
+void emit_call_vm (VM *vm, void *func, UCHAR arg_count, UCHAR return_type) {
+    *vm->p++ = OP_CALL_VM;
     *(void**)vm->p = func;
     vm->p += sizeof(void*);
     *vm->p++ = arg_count;

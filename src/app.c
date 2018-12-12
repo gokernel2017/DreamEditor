@@ -231,12 +231,10 @@ void app_UpdateGui (OBJECT *o) {
                 if (object_click->call) {
                     object_click->call (MSG_MOUSE_UP);
                 }
-/*
                 if (object_click->vm_call) {
+                    vm_simule_push_long (MSG_MOUSE_UP);
                     vm_Run (object_click->vm_call);
-                    //object_click->call (MSG_MOUSE_UP);
                 }
-*/
             }
         }
         object_click = NULL;
@@ -500,6 +498,11 @@ void app_SetCall (OBJECT *o, void (*call) (int msg)) {
     if (o)
         o->call = call;
 }
+void app_SetCallVM (OBJECT *o, VM *vm) {
+    if (o && vm)
+        o->vm_call = vm;
+}
+
 
 void app_SetVisible (OBJECT *o, int visible) {
     o->visible = visible;

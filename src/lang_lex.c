@@ -94,6 +94,7 @@ top:
         *p = 0;
 
         if (!strcmp(l->token, "int"))       { l->tok = TOK_INT;       return TOK_INT; }
+        if (!strcmp(l->token, "OBJECT"))    { l->tok = TOK_OBJECT;    return TOK_OBJECT; }
         if (!strcmp(l->token, "float"))     { l->tok = TOK_FLOAT;     return TOK_FLOAT; }
         if (!strcmp(l->token, "var"))       { l->tok = TOK_VAR;       return TOK_VAR; }
         if (!strcmp(l->token, "if"))        { l->tok = TOK_IF;        return TOK_IF; }
