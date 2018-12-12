@@ -3,7 +3,7 @@ int a = 100;
 
 OBJECT button;
 
-function hello () {
+function hello (msg) {
     a = a + 1;
     a; // display value
 }
