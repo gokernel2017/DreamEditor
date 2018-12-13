@@ -308,7 +308,8 @@ void app_UpdateGui (OBJECT *o) {
         if (o == root)
             draw_bg ();
         app_ObjectDrawAll (o);
-        SDL_Flip (screen);
+//        SDL_Flip (screen);
+        SDL_UpdateRect (screen, 0, 0, screen->w, screen->h);
     }
 
 }// app_UpdateGui ()
@@ -326,7 +327,7 @@ void app_Run (void (*call) (void)) {
     while (!quit) {
 
         app_UpdateGui (root);
-        CallBack ();
+//        CallBack ();
 
     }
 printf ("saindo app_run....\n");
