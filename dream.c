@@ -23,7 +23,7 @@
 
 #define DREAM_VERSION         0
 #define DREAM_VERSION_SUB     91
-#define DREAM_VERSION_PATCH   1
+#define DREAM_VERSION_PATCH   2
 
 #define ID_BUTTON1    1000  // FuncList
 #define ID_BUTTON2    1001  // Templat

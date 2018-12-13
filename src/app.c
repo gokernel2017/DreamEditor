@@ -227,18 +227,18 @@ void app_UpdateGui (OBJECT *o) {
 
         if (object_click && object_click == current) {
             if (object_click->proc (object_click, MSG_MOUSE_UP, 0) == RET_CALL) {
-                id_object = object_click->id;
                 if (object_click->call) {
+                    id_object = object_click->id;
                     object_click->call (MSG_MOUSE_UP);
                 }
-                if (object_click->vm_call) {
+                if (object_click && object_click->vm_call) {
+                    id_object = object_click->id;
                     vm_simule_push_long (MSG_MOUSE_UP);
                     vm_Run (object_click->vm_call);
                 }
             }
+            object_click = NULL;
         }
-        object_click = NULL;
-
         break;// case SDL_MOUSEBUTTONUP:
 
     case SDL_KEYDOWN:
@@ -319,6 +319,7 @@ void app_Run (void (*call) (void)) {
         CallBack ();
 
     }
+printf ("saindo app_run....\n");
 }
 
 static void draw_bg (void) {
@@ -609,7 +610,6 @@ int app_ShowDialog (char *text, int ok) {
         quit = 0;
 
         state = RET_REDRAW_ALL;
-        
     }
 
     return dialog_ret;
