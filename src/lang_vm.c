@@ -248,6 +248,7 @@ case OP_CALL_VM: {
 
 case OP_HALT:
     vm->ip = 0;
+    //printf ("VM sp: %d\n", (int)(sp - stack));
     return sp;
     }// switch (vm->code[vm->ip++])
     }// for (;;)

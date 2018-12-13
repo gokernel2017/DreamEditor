@@ -185,6 +185,7 @@ LIBIMPORT int key_shift;
 LIBIMPORT int key;
 LIBIMPORT int keysym;
 LIBIMPORT int mx, my; // mouse_x, mouse_y
+LIBIMPORT VM *main_vm;
 
 //-----------------------------------------------
 //-----------------  PUBLIC API  ----------------
@@ -194,6 +195,7 @@ LIBIMPORT int mx, my; // mouse_x, mouse_y
 //
 LIBIMPORT int       app_Init          (int argc, char **argv);
 LIBIMPORT void      app_Run           (void (*call) (void));
+LIBIMPORT OBJECT  * app_GetRoot       (void);
 LIBIMPORT void    * app_GetData       (OBJECT *o);
 LIBIMPORT void      app_SetDataNULL   (OBJECT *o);
 LIBIMPORT void      app_GetRect       (OBJECT *o, SDL_Rect *rect);

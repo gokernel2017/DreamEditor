@@ -233,8 +233,18 @@ void app_UpdateGui (OBJECT *o) {
                 }
                 if (object_click && object_click->vm_call) {
                     id_object = object_click->id;
-                    vm_simule_push_long (MSG_MOUSE_UP);
-                    vm_Run (object_click->vm_call);
+                    if (main_vm) {
+                        vm_Reset(main_vm);
+                        emit_begin(main_vm);
+                        //-------------------------------------------
+                        emit_push_long (main_vm, MSG_MOUSE_UP);
+                        emit_call_vm (main_vm, object_click->vm_call, 1, TYPE_NO_RETURN);
+                        //-------------------------------------------
+                        emit_end (main_vm);
+                        vm_Run (main_vm);
+                    }
+//                    vm_simule_push_long (MSG_MOUSE_UP);
+//                    vm_Run (object_click->vm_call);
                 }
             }
             object_click = NULL;
@@ -365,6 +375,10 @@ OBJECT * app_ObjectNew (
     o->next = NULL;
     o->data = data;
     return o;
+}
+
+OBJECT * app_GetRoot (void) {
+    return root;
 }
 
 void * app_GetData (OBJECT *o) {
