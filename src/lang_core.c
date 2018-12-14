@@ -42,8 +42,12 @@ static TFunc stdlib[]={
   { "info",           "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
   { "printf",         "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
   //
-  { "SetCall",        "0ps",      (UCHAR*)lib_SetCall,  0,    0,    NULL },
+  { "SetCall",        "0ps",      (UCHAR*)lib_SetCall,    0,    0,    NULL },
+  //
+  { "DialogNew",      "piiii",    (UCHAR*)app_DialogNew,  0,    0,    NULL },
+  { "DialogRun",      "pps",      (UCHAR*)app_DialogRun,  0,    0,    NULL },
   { "app_NewButton",  "ppiiis",   (UCHAR*)app_NewButton,  0,    0,    NULL },
+  //
   { NULL, NULL, NULL, 0, 0, NULL }
 };
 
@@ -705,6 +709,47 @@ void lib_info (int arg) {
             else printf ("Gvar[%d](%s)\n", i, v->name);
             v++; i++;
         }
+        } break;
+
+    case 2: {
+        TFunc *fi = stdlib;
+        printf ("FUNCTIONS:\n---------------\n");
+        while (fi->name) {
+            if(fi->proto){
+                char *s=fi->proto;
+                if (*s=='0') printf ("void  ");
+                else
+                if (*s=='i') printf ("int   ");
+                else
+                if (*s=='f') printf ("float ");
+                else
+                if (*s=='s') printf ("char  *");
+                else
+                if (*s=='p') printf ("void * ");
+                printf ("%s (", fi->name);
+                s++;
+                while(*s){
+                    if (*s=='i') printf ("int");
+                    else
+                    if (*s=='f') printf ("float");
+                    else
+                    if (*s=='s') printf ("char *");
+                    else
+                    if (*s=='p') printf ("void *");
+                    s++;
+                    if(*s) printf (", ");
+                }
+                printf (");\n");
+            }
+            fi++;
+        }
+        fi = Gfunc;
+        while(fi){
+            if(fi->proto) printf ("%s ", fi->proto);
+            printf ("%s\n", fi->name);
+            fi = fi->next;
+        }
+
         } break;
 
     default:

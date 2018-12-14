@@ -211,8 +211,6 @@ int proc_editor (OBJECT *o, int msg, int value) {
         int pos_x = (r.x + 70) - data->scroll*8;
         int pos_y = r.y + 5;
 
-printf ("proc_editor MSG_DRAW Init\n");
-
         SDL_FillRect (screen, &r, data->bg); // bg
         SDL_FillRect (screen, &(SR){ r.x, r.y, 61, r.h}, MRGB(240,240,240)); // lines numbers bg
         DrawRect (screen, r.x, r.y, r.w, r.h, COLOR_ORANGE); // border
@@ -335,8 +333,6 @@ printf ("proc_editor MSG_DRAW Init\n");
             DrawText (screen, buf, r.x+5, r.y+r.h-15, COLOR_WHITE);
         else
             DrawText (screen, buf, r.x+5, r.y+r.h-15, C_COMMENT);
-
-printf ("proc_editor MSG_DRAW ... FIM ...\n");
 
         } break; // case MSG_DRAW:
 
@@ -574,8 +570,6 @@ printf ("proc_editor MSG_DRAW ... FIM ...\n");
 
     }// switch (msg)
 
-    printf ("Executando proc_editor(MSG: %d) ... fim ...\n", msg);
-
     return 0;
 
 }// proc_editor()
@@ -625,8 +619,6 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
             printf ("OBJECT EDITOR: VM (Virtual Machine) NOT FOUND ... SORRY.\n");
         }
     }
-
-    printf ("!!! OBJECT EDITOR CRIADO !!!\n");
 
     return o;
 }

@@ -93,7 +93,7 @@ enum {
     OBJECT_TYPE_BUTTON,
     OBJECT_TYPE_EDIT,
     OBJECT_TYPE_EDITOR,
-//    OBJECT_TYPE_MENU
+    OBJECT_TYPE_DIALOG,
     OBJECT_TYPE_CONSOLE
 };
 enum {
@@ -107,7 +107,7 @@ enum {
 //-----------------------------------------------
 //
 typedef struct OBJECT       OBJECT; // opaque struct in file: "app.c"
-//typedef struct ARG          ARG;    // OBJECT Function Callback Argument
+typedef struct DIALOG       DIALOG; // opaque struct in file: "app.c"
 typedef struct DATA_EDITOR  DATA_EDITOR;
 typedef struct TRect        TRect;
 typedef struct MENU         MENU;
@@ -271,6 +271,11 @@ LIBIMPORT void  DrawWindow  (SDL_Rect *rect);
 // ... TEMP ...
 //
 LIBIMPORT void app_PrintData (OBJECT *o);
+
+// DIALOG:
+//
+LIBIMPORT OBJECT *  app_DialogNew (int x, int y, int w, int h);
+LIBIMPORT void      app_DialogRun (OBJECT *o, char *title);
 
 
 //-----------------------------------------------
