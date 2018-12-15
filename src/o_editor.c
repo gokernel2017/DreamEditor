@@ -38,7 +38,6 @@
 
 VM *main_vm = NULL;
 
-//static DATA_EDITOR  *data;
 static char         *str;
 static SDL_Rect     r;
 static int          state, color;
@@ -217,6 +216,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
 
         data->line_count = 0;
         state = STATE_DEFAULT;
+        color = C_DEFAULT;
 
         //-------------------------------
         // Get the FIRST char DISPLAYED
@@ -230,7 +230,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
                 if (line_top != data->line_top)
                     line_top++;
             }
-            SetTextColor ();
+//            SetTextColor ();
             str++;
         }
 
@@ -241,11 +241,12 @@ int proc_editor (OBJECT *o, int msg, int value) {
             if (pos_y > (r.y + r.h)-EDITOR_LINE_DISTANCE)
           break;
 
-            SetTextColor();
+//            SetTextColor();
 
             // Draw char in area of editor
             if (pos_x < r.x+r.w-8) {
 
+/*
                 // Selected TEXT - with SHIFT KEY:
                 if (is_selected) {
                     int i = (int)(str-data->text);
@@ -292,15 +293,15 @@ int proc_editor (OBJECT *o, int msg, int value) {
                     }
 
                 } // if (state == STATE_DEFAULT)
-
+*/
                 DrawChar (screen, *str, pos_x, pos_y, color);
             }
             pos_x += 8;
 
             if (*str == '\n') { // <-- New line
                 // draw lines numbers
-                sprintf (buf, "%04d", data->line_top + i); i++;
-                DrawText (screen, buf, r.x+4, pos_y, COLOR_ORANGE);
+//                sprintf (buf, "%04d", data->line_top + i); i++;
+//                DrawText (screen, buf, r.x+4, pos_y, COLOR_ORANGE);
 
                 data->line_count++;
                 pos_x = (r.x + 70) - data->scroll*8;
@@ -321,6 +322,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
         DrawRect (screen,  (r.x+69+data->col*8) -data->scroll*8, r.y+4+data->line_pos * EDITOR_LINE_DISTANCE, 9, 14, COLOR_WHITE);
         DrawVline (screen, (r.x+69+data->col*8) -data->scroll*8, r.y+1, r.y+r.h-2, COLOR_WHITE);
 
+/*
         // display: LINE NUMBER, COL, ...
         //
         SDL_FillRect (screen, &(SR){ r.x+1, r.y+r.h-EDITOR_LINE_DISTANCE, r.w-2, EDITOR_LINE_DISTANCE}, 0); // BG: LINE: COL:
@@ -333,7 +335,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
             DrawText (screen, buf, r.x+5, r.y+r.h-15, COLOR_WHITE);
         else
             DrawText (screen, buf, r.x+5, r.y+r.h-15, C_COMMENT);
-
+*/
         } break; // case MSG_DRAW:
 
     case MSG_FOCUS:
@@ -581,9 +583,15 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
     if ((data = (DATA_EDITOR*)malloc(sizeof(DATA_EDITOR))) == NULL)
   return NULL;
 
-    data->text = (char*) malloc (size);
+    if ((data->text = malloc(size))==NULL) {
+        printf ("ERRO: OBJECT EDITOR | text not allocated\n");
+        return NULL;
+    } else {
+        printf ("OBJECT EDITOR | text allocated\n");
+    }
     data->len = 0;
     if (text) {
+/*
         int i = 0;
         while (text[i]) {
             if (i >= size-2) break;
@@ -593,8 +601,14 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
         data->text[i] = 0;
         data->len = i;
         data->saved = 1;
+*/
+        data->len = strlen(text);
+        data->saved = 1;
+        strcpy (data->text, text);
     } else {
-        data->text[0] = 0;
+        data->text[0] = ' ';
+        data->text[1] = 0;
+        data->text[2] = 0;
     }
 
     data->FileName[0] = 0;

@@ -101,7 +101,7 @@ static int proc_null (OBJECT *o, int msg, int i) {
 
 int app_Init (int argc, char **argv) {
     static int init = 0;
-    int w = 0, h = 0, flags = 0, i;
+    int w = 800, h = 600, flags = 0, i;
 
     if (init) return 1;
     init = 1;
@@ -110,7 +110,7 @@ int app_Init (int argc, char **argv) {
     #ifdef _WIN32
     SDL_putenv ("SDL_VIDEO_CENTERED=center");
     #endif
-
+/*
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-w") && argc > i)
             w = atoi(argv[i+1]);
@@ -122,6 +122,7 @@ int app_Init (int argc, char **argv) {
     }
     if (w <= 0) w = 800;
     if (h <= 0) h = 600;
+*/
 
     screen = SDL_SetVideoMode (w, h, 16, flags);
 
