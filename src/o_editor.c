@@ -295,7 +295,8 @@ int proc_editor (OBJECT *o, int msg, int value) {
                 } // if (state == STATE_DEFAULT)
 */
                 DrawChar (screen, *str, pos_x, pos_y, color);
-            }
+
+            }// if (pos_x < r.x+r.w-8)
             pos_x += 8;
 
             if (*str == '\n') { // <-- New line
