@@ -20,7 +20,7 @@ OBJECT *ed = NULL;
 void CreateInterface (void) {
     zero = app_GetRoot ();
     if (zero) {
-        ed = app_NewEditor (zero, ID_EDITOR, 150, 150, "\nint a = 100, b = 250;\n\n  a + b;\n\n // To Run Script: CTRL + R ...\n", 5000);
+        ed = app_NewEditor (zero, ID_EDITOR, 150, 150, "\nint a = 100, b = 250;\n\n  a + b;\n\n // To Run Script: CTRL + R ...\n", 1000);
         if (ed) {
             app_SetSize (ed, 600, 400);
 //            app_SetFocus (ed);
