@@ -22,8 +22,8 @@
 #include "src/app.h"
 
 #define DREAM_VERSION         0
-#define DREAM_VERSION_SUB     91
-#define DREAM_VERSION_PATCH   2
+#define DREAM_VERSION_SUB     92
+#define DREAM_VERSION_PATCH   0
 
 #define ID_BUTTON1    1000  // FuncList
 #define ID_BUTTON2    1001  // Templat
@@ -401,27 +401,27 @@ void call_bt_about (int msg) {
 
 void CreateInterface (void) {
 
-    button1 = app_NewButton (NULL, ID_BUTTON1, 3, 3, "FuncList");
-    button2 = app_NewButton (NULL, ID_BUTTON2, 106, 3, "Template");
-    bt_about = app_NewButton (NULL, ID_BT_ABOUT, 106+103, 3, "About");
-    edit = app_NewEdit (NULL, ID_EDIT, 209+103, 3, "Find Text", EDITOR_FILE_NAME_SIZE-2);
+    button1 = app_NewButton (NULL, ID_BUTTON1, 3, 4, "FuncList");
+    button2 = app_NewButton (NULL, ID_BUTTON2, 106, 4, "Template");
+    bt_about = app_NewButton (NULL, ID_BT_ABOUT, 106+103, 4, "About");
+    edit = app_NewEdit (NULL, ID_EDIT, 209+103, 4, "Find Text", EDITOR_FILE_NAME_SIZE-2);
     app_SetSize (edit, 486, 0);
 
-    console = app_NewConsole (NULL, ID_CONSOLE, 3, 200, "Console");
+    console = app_NewConsole (NULL, ID_CONSOLE, 3, 197, "Console");
     app_SetSize (console, screen->w-6, screen->h-200);
     app_SetCall (console, call_console);
 
     if (text && FileName) {
-        editor = app_NewEditor (NULL, ID_EDITOR, 3, 33, text, 50000);
+        editor = app_NewEditor (NULL, ID_EDITOR, 3, 35, text, 50000);
         app_EditorSetFileName (editor, FileName);
     } else {
-        editor = app_NewEditor (NULL, ID_EDITOR, 3, 33,
+        editor = app_NewEditor (NULL, ID_EDITOR, 3, 35,
         "\n // Expression:\n\n   10 * 20 + 3 * 5; // 215\n\n // CTRL + R: To Run Script.\n",
         50000
         );
     }
 
-    app_SetSize (editor, screen->w-6, screen->h-65);
+    app_SetSize (editor, screen->w-6, screen->h-67);
     app_SetFocus (editor);
     app_SetCall (editor, call_editor);
 
@@ -429,7 +429,6 @@ void CreateInterface (void) {
     app_SetCall (button2, call_button2);
     app_SetCall (bt_about, call_bt_about);
     app_SetCall (edit, call_edit);
-//    app_SetCall (shell, call_shell);
 
     menu = app_MenuCreate (400, 250);
 }
@@ -443,16 +442,11 @@ void Finalize (void) {
     SEND (editor, MSG_FREE, 0);
 }
 
-void Hello_World (int a, int b) {
-    printf ("Hello World | CALL FUNCTION | a + b = %d\n", a+b);
-}
-
 int main (int argc, char **argv) {
     if (app_Init(argc,argv)) {
 
         if (argc >= 2 && (text = app_FileOpen(argv[1])) != NULL) {
             FileName = argv[1];
-            printf ("agora STR ponteiro %p = %d\n", &text, (int)text);
         }
         CreateInterface ();
         app_Run (NULL);
