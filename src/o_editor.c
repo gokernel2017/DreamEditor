@@ -205,7 +205,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
     switch (msg) {
 
     case MSG_DRAW: {
-        char buf[50];
+        char buf[1024];
         int line_top = 0, i = 1;
         int pos_x = (r.x + 70) - data->scroll*8;
         int pos_y = r.y + 5;
@@ -230,7 +230,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
                 if (line_top != data->line_top)
                     line_top++;
             }
-//            SetTextColor ();
+            SetTextColor ();
             str++;
         }
 
@@ -241,12 +241,11 @@ int proc_editor (OBJECT *o, int msg, int value) {
             if (pos_y > (r.y + r.h)-EDITOR_LINE_DISTANCE)
           break;
 
-//            SetTextColor();
+            SetTextColor();
 
             // Draw char in area of editor
             if (pos_x < r.x+r.w-8) {
 
-/*
                 // Selected TEXT - with SHIFT KEY:
                 if (is_selected) {
                     int i = (int)(str-data->text);
@@ -293,7 +292,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
                     }
 
                 } // if (state == STATE_DEFAULT)
-*/
+
                 DrawChar (screen, *str, pos_x, pos_y, color);
 
             }// if (pos_x < r.x+r.w-8)
@@ -301,8 +300,8 @@ int proc_editor (OBJECT *o, int msg, int value) {
 
             if (*str == '\n') { // <-- New line
                 // draw lines numbers
-//                sprintf (buf, "%04d", data->line_top + i); i++;
-//                DrawText (screen, buf, r.x+4, pos_y, COLOR_ORANGE);
+                sprintf (buf, "%04d", data->line_top + i); i++;
+								DrawText (screen, buf, r.x+4, pos_y, COLOR_ORANGE);
 
                 data->line_count++;
                 pos_x = (r.x + 70) - data->scroll*8;
@@ -323,7 +322,6 @@ int proc_editor (OBJECT *o, int msg, int value) {
         DrawRect (screen,  (r.x+69+data->col*8) -data->scroll*8, r.y+4+data->line_pos * EDITOR_LINE_DISTANCE, 9, 14, COLOR_WHITE);
         DrawVline (screen, (r.x+69+data->col*8) -data->scroll*8, r.y+1, r.y+r.h-2, COLOR_WHITE);
 
-/*
         // display: LINE NUMBER, COL, ...
         //
         SDL_FillRect (screen, &(SR){ r.x+1, r.y+r.h-EDITOR_LINE_DISTANCE, r.w-2, EDITOR_LINE_DISTANCE}, 0); // BG: LINE: COL:
@@ -336,7 +334,7 @@ int proc_editor (OBJECT *o, int msg, int value) {
             DrawText (screen, buf, r.x+5, r.y+r.h-15, COLOR_WHITE);
         else
             DrawText (screen, buf, r.x+5, r.y+r.h-15, C_COMMENT);
-*/
+
         } break; // case MSG_DRAW:
 
     case MSG_FOCUS:
@@ -604,7 +602,6 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
         data->saved = 1;
 */
         data->len = strlen(text);
-        data->saved = 1;
         strcpy (data->text, text);
     } else {
         data->text[0] = ' ';
@@ -620,6 +617,13 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
     data->line_top = 0;
     data->line_pos = 0;
     data->line_count = 0;
+    data->saved = 1;
+    //
+    data->line_ini = 0;
+    data->line_len = 0;
+    data->sel_start = 0;  // text selected ... WHITH SHIFT KEY
+    data->sel_len = 0;
+    //
     data->size = size; // memory size text alloc
     data->bg = 8;
 

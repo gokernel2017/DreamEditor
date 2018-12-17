@@ -500,7 +500,6 @@ static void word_function (LEXER *l, VM *a) {
     //
     vm_Reset (vm_function);
     emit_begin (vm_function);
-    //stmt (l,a); // here start from char: '{'
     stmt (l,vm_function); // here start from char: '{'
     emit_end (vm_function);
 
@@ -539,7 +538,6 @@ static void word_function (LEXER *l, VM *a) {
             }
         }
 */
-printf ("Criando Function(%s)\n", func_name);
 
         func->code = (UCHAR*)vm;
 
