@@ -23,6 +23,7 @@ static VALUE    stack [STACK_SIZE];
 static VALUE  * sp = stack;
 static VALUE    eax;
 static int      callvm_stage2_position = 0;
+static int			flag;
 
 void callvm (VM *vm) {
     vm_Run (vm);
@@ -106,6 +107,62 @@ case OP_MOV_EAX_VAR: {
 //    Gvar[i].value.l = eax.l;
     Gvar[i].value = eax;
     } continue;
+
+
+case OP_CMP_LONG:
+    sp--;
+    flag = (int)(sp[0].l - sp[1].l);
+    sp--;
+    continue;
+
+//
+// simple_language_0.9.0
+//
+case OP_JUMP_JMP:
+    vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    continue;
+
+case OP_JUMP_JE: // !=
+    if (!flag)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JNE: // ==
+    if (flag)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JGE: // =<
+    if (flag >= 0)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JLE: // >=
+    if (flag <= 0)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JG:
+    if (flag > 0)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
+
+case OP_JUMP_JL:
+    if (flag < 0)
+        vm->ip = *(unsigned short*)(vm->code+vm->ip);
+    else
+        vm->ip += sizeof(unsigned short);
+    continue;
 
 //
 // call a C Function
@@ -302,6 +359,31 @@ int vm_GetLen (VM *vm) {
     return (vm->p - vm->code);
 }
 
+void vm_Label (VM *vm, char *name) {
+    if (name) {
+        VM_label *lab;
+        VM_label *l = vm->label;
+
+        // find if exist:
+        while (l) {
+            if (!strcmp(l->name, name)) {
+                printf ("Label Exist: '%s'\n", l->name);
+                return;
+            }
+            l = l->next;
+        }
+
+        if ((lab = (VM_label*)malloc(sizeof(VM_label))) != NULL) {
+            lab->name = strdup (name);
+            lab->pos  = (vm->p - vm->code); // the index
+
+            // add on top:
+            lab->next = vm->label;
+            vm->label = lab;
+        }
+    }
+}
+
 void emit_begin (VM *vm) {
 }
 
@@ -386,6 +468,63 @@ void emit_push_string (VM *vm, char *s) {
     *vm->p++ = OP_PUSH_STRING;
     *(void**)vm->p = s;
     vm->p += sizeof(void*);
+}
+
+void emit_cmp_long (VM *vm) {
+    *vm->p++ = OP_CMP_LONG;
+}
+
+void emit_jump_jmp (VM *vm, char *name) {
+    VM_jump *jump;
+
+    if (name && (jump = (VM_jump*)malloc (sizeof(VM_jump))) != NULL) {
+
+        *vm->p++ = OP_JUMP_JMP;
+
+        jump->name = strdup (name);
+        jump->pos  = (vm->p - vm->code); // the index
+
+        // add on top:
+        jump->next = vm->jump;
+        vm->jump = jump;
+
+        // to change ...
+        *(unsigned short*)vm->p = (jump->pos+2); // the index
+        vm->p += sizeof(unsigned short);
+    }
+}
+
+static void conditional_jump (VM *vm, char *name, UCHAR type) {
+    VM_jump *jump;
+
+    if (name && (jump = (VM_jump*)malloc (sizeof(VM_jump))) != NULL) {
+
+        *vm->p++ = type;
+
+        jump->name = strdup (name);
+        jump->pos  = (vm->p - vm->code); // the index
+
+        // add on top:
+        jump->next = vm->jump;
+        vm->jump = jump;
+
+        // to change ...
+        *(unsigned short*)vm->p = (jump->pos+2); // the index
+        vm->p += sizeof(unsigned short);
+    }
+}
+
+void emit_jump_je (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JE);
+}
+void emit_jump_jne (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JNE);
+}
+void emit_jump_jle (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JLE);
+}
+void emit_jump_jge (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JGE);
 }
 
 void emit_call (VM *vm, void *func, UCHAR arg_count, UCHAR return_type) {

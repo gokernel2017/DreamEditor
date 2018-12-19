@@ -55,6 +55,15 @@ enum {
     OP_POP_EAX,
     OP_PRINT_EAX,
     OP_MOV_EAX_VAR,
+		// compare long:
+		OP_CMP_LONG,
+		OP_JUMP_JMP,
+		OP_JUMP_JE,
+		OP_JUMP_JG,
+		OP_JUMP_JL,
+		OP_JUMP_JNE,
+		OP_JUMP_JLE,
+		OP_JUMP_JGE,
     //
     OP_CALL,
     OP_CALL_VM,
@@ -131,6 +140,7 @@ LIBIMPORT VM    * vm_New    (unsigned int size);
 LIBIMPORT VALUE * vm_Run    (VM *vm);
 LIBIMPORT void    vm_Reset  (VM *vm);
 LIBIMPORT int     vm_GetLen (VM *vm);
+LIBIMPORT void 		vm_Label	(VM *vm, char *name);
 //
 LIBIMPORT void vm_simule_push_long (long value);
 //
@@ -155,6 +165,14 @@ LIBIMPORT void emit_pop_eax (VM *vm);
 LIBIMPORT void emit_print_eax (VM *vm, UCHAR type);
 LIBIMPORT void emit_mov_eax_var (VM *vm, UCHAR index);
 LIBIMPORT void emit_push_string (VM *vm, char *s);
+//
+LIBIMPORT void emit_cmp_long (VM *vm);
+LIBIMPORT void emit_jump_jmp (VM *vm, char *name);
+LIBIMPORT void emit_jump_je (VM *vm, char *name);
+LIBIMPORT void emit_jump_jne (VM *vm, char *name);
+LIBIMPORT void emit_jump_jle (VM *vm, char *name);
+LIBIMPORT void emit_jump_jge (VM *vm, char *name);
+//
 LIBIMPORT void emit_call (VM *vm, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void emit_call_vm (VM *vm, void *func, UCHAR arg_count, UCHAR return_type);
 

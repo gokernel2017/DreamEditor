@@ -761,6 +761,7 @@ OBJECT * app_DialogNew (int x, int y, int w, int h) {
     OBJECT *o;
     if ((o = app_ObjectNew (proc_draw_dialog,x,y,w,h,0,OBJECT_TYPE_DIALOG,NULL)) != NULL) {
     }
+		printf ("Application API: Creating Dialog ( DialogNew() )\n");
     return o;
 }
 

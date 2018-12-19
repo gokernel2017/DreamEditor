@@ -11,6 +11,7 @@
 #define STR_ERRO_SIZE   1024
 
 static void   word_int      (LEXER *l, VM *vm);
+static void 	word_if				(LEXER *l, VM *vm);
 static void   word_OBJECT   (LEXER *l, VM *vm);
 static void   word_function (LEXER *l, VM *vm);
 //
@@ -291,7 +292,7 @@ static int stmt (LEXER *l, VM *vm) {
     case TOK_OBJECT:   word_OBJECT   (l,vm); return 1;
 //    case TOK_FLOAT:    word_float    (l,a); return 1;
 //    case TOK_VAR:      word_var      (l,a); return 1;
-//    case TOK_IF:       word_if       (l,a); return 1;
+    case TOK_IF:       word_if       (l,vm); return 1;
 //    case TOK_FOR:      word_for      (l,a); return 1;
 //    case TOK_BREAK:    word_break    (l,a); return 1;
 //    case TOK_RETURN:   word_return   (l,a); return 1;
@@ -404,6 +405,77 @@ static void word_int (LEXER *l, VM *vm) {
 
 }// word_int()
 
+static void word_if (LEXER *l, VM *vm) {
+    //**** to "push/pop"
+    static char array[20][20];
+    static int if_count_total = 0;
+    static int if_count = 0;
+    int is_negative = 0;
+
+    if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
+
+    if_count++;
+    sprintf (array[if_count], "IF%d", if_count_total++);
+
+    while (!erro && lex(l)) { // pass arguments: if (a > b) { ... }
+        is_negative = 0;
+
+        if (l->tok == '!') { is_negative = 1; lex(l); }
+
+        expr0(l,vm);
+
+        if (erro) {
+            Erro ("<<<<<<<<<<  if erro >>>>>>>>>>>>>\n");
+            return;
+        }
+
+        switch (l->tok) {
+        case ')': // if (a) { ... }
+        case TOK_AND_AND:
+            emit_push_long (vm, 0); // ! to compare if zero
+            emit_cmp_long (vm);
+            if (is_negative == 0) emit_jump_je  (vm,array[if_count]);
+            else                  emit_jump_jne (vm,array[if_count]);
+            break;
+
+        case '>':
+            lex(l); expr0(l,vm);
+            emit_cmp_long (vm);
+            emit_jump_jle (vm,array[if_count]);
+            break;
+        case '<':
+            lex(l); expr0(l,vm);
+            emit_cmp_long (vm);
+            emit_jump_jge (vm,array[if_count]);
+            break;
+
+        case TOK_EQUAL_EQUAL: // ==
+            lex(l); expr0(l,vm);
+            emit_cmp_long (vm);
+            emit_jump_jne(vm,array[if_count]);
+            break;
+
+        case TOK_NOT_EQUAL: // !=
+            lex(l); expr0(l,vm);
+            emit_cmp_long (vm);
+            emit_jump_je (vm,array[if_count]);
+            break;
+				
+				default:
+						Erro ("if implementation only: if (a) {...}, if (!a) {...} end ...'<, >, ==, !='");
+						break;
+
+        }//: switch(tok)
+
+        if (l->tok==')') break;
+    }
+    if (see(l)=='{') stmt (l,vm); else Erro ("word(if) need start block: '{'\n");
+
+    vm_Label (vm, array[if_count]);
+    if_count--;
+
+}// word_if ()
+
 static void word_OBJECT (LEXER *l, VM *vm) {
     while (lex(l)) {
         if (l->tok==TOK_ID) {
@@ -414,7 +486,6 @@ static void word_OBJECT (LEXER *l, VM *vm) {
     if (l->tok != ';') Erro ("ERRO: The word(OBJECT) need the char(;) on the end\n");
 
 }// word_OBJECT ()
-
 
 static void word_function (LEXER *l, VM *a) {
     TFunc *func;

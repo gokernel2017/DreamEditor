@@ -182,6 +182,12 @@ top:
         l->tok = TOK_EQUAL_EQUAL;
         return TOK_EQUAL_EQUAL;
     }
+    if (c=='!' && next == '=') { // !=
+        *p++ = '!'; *p++ = '='; *p = 0;
+        l->pos += 2;
+        l->tok = TOK_NOT_EQUAL;
+        return TOK_NOT_EQUAL;
+    }
     if (c=='&' && next == '&') { // &&
         *p++ = '&'; *p++ = '&'; *p = 0;
         l->pos += 2;
