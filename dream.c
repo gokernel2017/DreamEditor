@@ -22,7 +22,7 @@
 #include "src/app.h"
 
 #define DREAM_VERSION         0
-#define DREAM_VERSION_SUB     92
+#define DREAM_VERSION_SUB     93
 #define DREAM_VERSION_PATCH   0
 
 #define ID_BUTTON1    1000  // FuncList
