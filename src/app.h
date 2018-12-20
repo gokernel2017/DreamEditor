@@ -212,7 +212,7 @@ LIBIMPORT void      app_ObjectAdd     (OBJECT *o, OBJECT *sub);
 LIBIMPORT void      app_ObjectUpdate  (OBJECT *o); // draw and display
 LIBIMPORT void      app_ObjectSetTop  (OBJECT *o);
 LIBIMPORT int       app_ShowDialog    (char *text, int ok);
-LIBIMPORT int       app_FileDialog    (char const *title, char path[1024]);
+LIBIMPORT int       app_FileDialog    (char const *title, char *path);
 LIBIMPORT int       app_SendMessage   (OBJECT *o, int msg, int value);
 //
 LIBIMPORT OBJECT * app_ObjectNew (

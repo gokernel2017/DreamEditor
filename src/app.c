@@ -635,7 +635,7 @@ void call_edit_file_dialog (int msg) {
     }
 }
 
-int app_FileDialog (char const *title, char path[1024]) {
+int app_FileDialog (char const *title, char *path) {
     if (file_dialog_root == NULL) {
         if ((file_dialog_root = app_ObjectNew (proc_null,0,0,0,0,0,0,NULL)) != NULL) {
             dialog_data.fg = COLOR_ORANGE;

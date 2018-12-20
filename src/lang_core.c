@@ -11,7 +11,7 @@
 #define STR_ERRO_SIZE   1024
 
 static void   word_int      (LEXER *l, VM *vm);
-static void   word_if	    (LEXER *l, VM *vm);
+static void 	word_if				(LEXER *l, VM *vm);
 static void   word_OBJECT   (LEXER *l, VM *vm);
 static void   word_function (LEXER *l, VM *vm);
 //
