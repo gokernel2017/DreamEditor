@@ -10,7 +10,7 @@
 // Dream Editor:
 //
 // COMPILE:
-//   gcc dream.c -o dream libapp.a -lSDL -Wall
+//   gcc dream.c -o dream libapp.a -lSDL -Wall -O2
 //
 // USAGE:
 //   dream <FileName.txt>
