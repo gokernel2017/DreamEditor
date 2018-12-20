@@ -10,7 +10,7 @@
 
  To compile type:
    make
-   gcc dream.c -o dream libapp.a -lSDL -Wall
+   gcc dream.c -o dream libapp.a -lSDL -Wall -O2
 
  BINARY / RELEASES:
    https://github.com/gokernel2017/DreamEditor/releases
