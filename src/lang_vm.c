@@ -520,6 +520,15 @@ void emit_jump_je (VM *vm, char *name) {
 void emit_jump_jne (VM *vm, char *name) {
     conditional_jump (vm, name, OP_JUMP_JNE);
 }
+
+void emit_jump_jl (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JL);
+}
+void emit_jump_jg (VM *vm, char *name) {
+    conditional_jump (vm, name, OP_JUMP_JG);
+}
+
+
 void emit_jump_jle (VM *vm, char *name) {
     conditional_jump (vm, name, OP_JUMP_JLE);
 }

@@ -194,6 +194,20 @@ top:
         l->tok = TOK_AND_AND;
         return TOK_AND_AND;
     }
+    if (c=='<' && next == '=') { // <=
+        *p++ = '<'; *p++ = '='; *p = 0;
+        l->pos += 2;
+        l->tok = TOK_MENOR_EQUAL;
+        return TOK_MENOR_EQUAL;
+    }
+    if (c=='>' && next == '=') { // <=
+        *p++ = '>'; *p++ = '='; *p = 0;
+        l->pos += 2;
+        l->tok = TOK_MAIOR_EQUAL;
+        return TOK_MAIOR_EQUAL;
+    }
+//		TOK_MENOR_EQUAL,	// <= esse
+//		TOK_MAIOR_EQUAL,	// >=
     if (c=='-') {
         if (next=='-') {
             *p++ = '-'; *p++ = '-'; *p=0;

@@ -401,6 +401,7 @@ static void word_int (LEXER *l, VM *vm) {
         }
         if (l->tok == ';') break;
     }
+//printf ("word int(%s) LINE: %d\n", l->token, l->line);
     if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
 
 }// word_int()
@@ -410,7 +411,7 @@ static void word_if (LEXER *l, VM *vm) {
     static char array[20][20];
     static int if_count_total = 0;
     static int if_count = 0;
-    int is_negative = 0;
+    int is_negative, tok;
 
     if (lex(l) !='(') { Erro ("ERRO SINTAX (if) need char: '('\n"); return; }
 
@@ -439,30 +440,68 @@ static void word_if (LEXER *l, VM *vm) {
             break;
 
         case '>':
-            lex(l); expr0(l,vm);
-            emit_cmp_long (vm);
-            emit_jump_jle (vm,array[if_count]);
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+								expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_jle (vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return; }
             break;
         case '<':
-            lex(l); expr0(l,vm);
-            emit_cmp_long (vm);
-            emit_jump_jge (vm,array[if_count]);
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+            		expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_jge (vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return ; }
+						break;
+//--------------------------------------------
+        case TOK_MAIOR_EQUAL:
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+								expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_jl (vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return; }
             break;
+        case TOK_MENOR_EQUAL:
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+            		expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_jg (vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return ; }
+						break;
+//--------------------------------------------
 
         case TOK_EQUAL_EQUAL: // ==
-            lex(l); expr0(l,vm);
-            emit_cmp_long (vm);
-            emit_jump_jne(vm,array[if_count]);
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+            		expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_jne(vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return; }
             break;
 
         case TOK_NOT_EQUAL: // !=
-            lex(l); expr0(l,vm);
-            emit_cmp_long (vm);
-            emit_jump_je (vm,array[if_count]);
+            tok = lex(l);
+						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
+            		expr0(l,vm);
+            		emit_cmp_long (vm);
+            		emit_jump_je (vm,array[if_count]);
+						}
+						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return; }
             break;
 				
 				default:
+						printf ("IF ERRO:\n");
 						Erro ("if implementation only: if (a) {...}, if (!a) {...} end ...'<, >, ==, !='");
+						return;
 						break;
 
         }//: switch(tok)

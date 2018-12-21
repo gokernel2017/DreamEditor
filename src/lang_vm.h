@@ -172,6 +172,9 @@ LIBIMPORT void emit_jump_je (VM *vm, char *name);
 LIBIMPORT void emit_jump_jne (VM *vm, char *name);
 LIBIMPORT void emit_jump_jle (VM *vm, char *name);
 LIBIMPORT void emit_jump_jge (VM *vm, char *name);
+LIBIMPORT void emit_jump_jl (VM *vm, char *name);
+LIBIMPORT void emit_jump_jg (VM *vm, char *name);
+
 //
 LIBIMPORT void emit_call (VM *vm, void *func, UCHAR arg_count, UCHAR return_type);
 LIBIMPORT void emit_call_vm (VM *vm, void *func, UCHAR arg_count, UCHAR return_type);

@@ -78,7 +78,10 @@ enum {
     TOK_EQUAL_EQUAL,  // ==
     TOK_NOT_EQUAL,    // !=
     TOK_AND_AND,      // &&
-    TOK_PTR           // ->
+    TOK_PTR,          // ->
+		//
+		TOK_MENOR_EQUAL,	// <= esse
+		TOK_MAIOR_EQUAL	// >=
 };
 
 typedef struct LEXER LEXER;
