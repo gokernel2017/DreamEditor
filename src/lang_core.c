@@ -457,8 +457,10 @@ static void word_if (LEXER *l, VM *vm) {
 						}
 						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return ; }
 						break;
-//--------------------------------------------
-        case TOK_MAIOR_EQUAL:
+
+//-------------------------------------------------------------------
+
+        case TOK_MAIOR_EQUAL: // >=
             tok = lex(l);
 						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
 								expr0(l,vm);
@@ -467,7 +469,8 @@ static void word_if (LEXER *l, VM *vm) {
 						}
 						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return; }
             break;
-        case TOK_MENOR_EQUAL:
+
+        case TOK_MENOR_EQUAL: // <=
             tok = lex(l);
 						if (tok >= TOK_ID && tok <= TOK_NUMBER) {
             		expr0(l,vm);
@@ -476,7 +479,8 @@ static void word_if (LEXER *l, VM *vm) {
 						}
 						else { Erro ("IF ERRO(%s): %d", l->token, l->line); return ; }
 						break;
-//--------------------------------------------
+
+//-------------------------------------------------------------------
 
         case TOK_EQUAL_EQUAL: // ==
             tok = lex(l);
