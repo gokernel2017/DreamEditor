@@ -25,15 +25,14 @@ static VALUE    eax;
 static int      callvm_stage2_position = 0;
 static int			flag;
 
-void callvm (VM *vm) {
+static void callvm (VM *vm) {
     vm_Run (vm);
 }
 
-void vm_simule_push_long (long value) {
-    sp++;
-    sp->l = value;
-}
-
+//-------------------------------------------------------------------
+//-------------------  MAIN IMPLEMENTATION VM RUN  ------------------
+//-------------------------------------------------------------------
+//
 VALUE * vm_Run (VM *vm) {
 
     vm->ip = 0;
@@ -79,6 +78,10 @@ case OP_POP_VAR: {
     sp--;
     } continue;
 
+case OP_INC_LONG: {
+		Gvar [ (UCHAR)(vm->code[vm->ip++]) ].value.l++;
+    } continue;
+
 case OP_MUL_LONG: sp[-1].l *= sp[0].l; sp--; continue;
 case OP_DIV_LONG: sp[-1].l /= sp[0].l; sp--; continue;
 case OP_ADD_LONG: sp[-1].l += sp[0].l; sp--; continue;
@@ -104,10 +107,8 @@ case OP_PRINT_EAX: {
 
 case OP_MOV_EAX_VAR: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
-//    Gvar[i].value.l = eax.l;
     Gvar[i].value = eax;
     } continue;
-
 
 case OP_CMP_LONG:
     sp--;
@@ -225,7 +226,7 @@ case OP_CALL:
         sp -= 4;
         break; //: case 4:
 
-    case 5: // 5 arguents
+    case 5: // 5 arguments
         if (return_type == TYPE_NO_RETURN) // 0 | no return
             func (sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
         else if (return_type == TYPE_FLOAT)
@@ -234,6 +235,16 @@ case OP_CALL:
             eax.l = func (sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
         sp -= 5;
         break; //: case 5:
+
+    case 6: // 6 arguments
+        if (return_type == TYPE_NO_RETURN) // 0 | no return
+            func (sp[-5], sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        else if (return_type == TYPE_FLOAT)
+            eax.f = func_float (sp[-5], sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        else
+            eax.l = func (sp[-5], sp[-4], sp[-3], sp[-2], sp[-1], sp[0]);
+        sp -= 6;
+        break; //: case 6:
 
     }//: switch (arg_count)
 
@@ -248,7 +259,7 @@ case OP_CALL_VM: {
     UCHAR arg_count = (UCHAR)(vm->code[vm->ip++]); //printf ("CALL ARG_COUNT = %d\n", arg_count);
     UCHAR return_type = (UCHAR)(vm->code[vm->ip++]);
 
-    switch(arg_count){
+    switch (arg_count) {
     case 1: local->arg[0] = sp[0]; sp--; break;
     case 2:
         local->arg[0] = sp[-1];
@@ -275,6 +286,15 @@ case OP_CALL_VM: {
         local->arg[3] = sp[-1];
         local->arg[4] = sp[0];
         sp -= 5;
+        break;
+    case 6:
+        local->arg[0] = sp[-5];
+        local->arg[1] = sp[-4];
+        local->arg[2] = sp[-3];
+        local->arg[3] = sp[-2];
+        local->arg[4] = sp[-1];
+        local->arg[5] = sp[0];
+        sp -= 6;
         break;
 
     }//: switch(arg_count)
@@ -419,6 +439,7 @@ void emit_push_long (VM *vm, long value) {
     *(long*)vm->p = value;
     vm->p += sizeof(long);
 }
+
 void emit_push_float (VM *vm, float value) {
     *vm->p++ = OP_PUSH_FLOAT;
     *(float*)vm->p = value;
@@ -432,6 +453,11 @@ void emit_push_var (VM *vm, UCHAR i) {
 void emit_pop_var (VM *vm, UCHAR i) {
     *vm->p++ = OP_POP_VAR;
     *vm->p++ = i;
+}
+
+void emit_inc_long (VM *vm, UCHAR index) {
+    *vm->p++ = OP_INC_LONG;
+    *vm->p++ = index;
 }
 
 void emit_mul_long (VM *vm) {

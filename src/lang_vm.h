@@ -42,6 +42,8 @@ enum {
     OP_PUSH_VAR,
     OP_PUSH_STRING,
     OP_POP_VAR,
+		//
+		OP_INC_LONG,
     //
     OP_MUL_LONG,
     OP_DIV_LONG,
@@ -153,6 +155,8 @@ LIBIMPORT void emit_push_float (VM *vm, float value);
 LIBIMPORT void emit_push_float (VM *vm, float value);
 LIBIMPORT void emit_push_var (VM *vm, UCHAR i);
 LIBIMPORT void emit_pop_var (VM *vm, UCHAR i);
+//
+LIBIMPORT void emit_inc_long (VM *vm, UCHAR index);
 //
 LIBIMPORT void emit_mul_long (VM *vm);
 LIBIMPORT void emit_div_long (VM *vm);

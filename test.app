@@ -1,7 +1,8 @@
 
-int variable;
+int variable = 90, a = 100;
 
-  if (variable <= 0) {
+  if (variable <= a) {
       variable;
+      variable++;
   }
 

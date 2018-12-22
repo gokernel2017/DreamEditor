@@ -11,9 +11,12 @@
 #define STR_ERRO_SIZE   1024
 
 static void   word_int      (LEXER *l, VM *vm);
-static void 	word_if				(LEXER *l, VM *vm);
-static void   word_OBJECT   (LEXER *l, VM *vm);
+static void		word_if				(LEXER *l, VM *vm);
+static void		word_for			(LEXER *l, VM *vm);
+static void		word_break		(LEXER *l, VM *vm);
+//
 static void   word_function (LEXER *l, VM *vm);
+static void   word_OBJECT   (LEXER *l, VM *vm);
 //
 static int    stmt          (LEXER *l, VM *vm);
 static int    see           (LEXER *l);
@@ -30,6 +33,7 @@ static F_STRING *fs_new (char *s);
 //
 void lib_info (int arg);
 void lib_printf (char *format, ...);
+void print_int_float (int i, float f);
 //
 // Set VM CallBack Function
 //
@@ -42,7 +46,8 @@ static TFunc stdlib[]={
   //--------------------------------------------------------------------------
   { "info",           "0i",       (UCHAR*)lib_info,       0,    0,    NULL },
   { "printf",         "0s",       (UCHAR*)lib_printf,     0,    0,    NULL },
-  //
+  { "print_int_float","0if",      (UCHAR*)print_int_float,0,    0,    NULL },
+	//
   { "SetCall",        "0ps",      (UCHAR*)lib_SetCall,    0,    0,    NULL },
   //
   { "DialogNew",      "piiii",    (UCHAR*)app_DialogNew,  0,    0,    NULL },
@@ -64,6 +69,7 @@ static int
     is_function,
     is_recursive,
     local_count,
+		loop_level,
     argument_count,
     main_variable_type,
     var_type
@@ -71,7 +77,8 @@ static int
 
 static char
     strErro [STR_ERRO_SIZE],
-    func_name [100]
+    func_name [100],
+    array_break [20][20]   // used to word break
     ;
 
 static void expression (LEXER *l, VM *vm) {
@@ -100,7 +107,26 @@ static void expression (LEXER *l, VM *vm) {
 
             main_variable_type = var_type = Gvar[i].type;
 
-            if (next=='=') {
+            // increment/decrement var type int:
+            //
+            // i++; i--;
+            //
+            if (var_type != TYPE_FLOAT) {
+                if (next == TOK_PLUS_PLUS) { // ++
+                    lex(l);
+                    emit_inc_long (vm, i);
+              return;
+                }
+/*
+                if (next == TOK_MINUS_MINUS) { // --
+                    lex(l);
+                    emit_dec_long (vm, i);
+              return;
+                }
+*/
+            }
+
+            if (next == '=') {
                 lex_save(l); // save the lexer position
                 lex(l); // =
                 if (lex(l)==TOK_ID) {
@@ -209,12 +235,12 @@ static void expr3 (LEXER *l, VM *vm) { // '('
     }
     else atom(l,vm); // atom:
 }
-static void atom (LEXER *l, VM *a) { // expres
+static void atom (LEXER *l, VM *vm) { // expres
 
     if (l->tok==TOK_STRING) {
         F_STRING *s = fs_new (l->token);
         if (s) {
-            emit_push_string (a, s->s);
+            emit_push_string (vm, s->s);
         }
         lex(l);
   return;
@@ -249,19 +275,19 @@ static void atom (LEXER *l, VM *a) { // expres
 */
         if ((i = VarFind(l->token)) !=-1) {
             var_type = Gvar[i].type;
-            emit_push_var (a, i);
+            emit_push_var (vm, i);
             lex(l);
         }
         else Erro("%s: %d: - Expression atom, Ilegar Word: '%s'", l->name, l->line, l->token);
     }
-    else if (l->tok==TOK_NUMBER) {
+    else if (l->tok == TOK_NUMBER) {
         if (strchr(l->token, '.'))
             var_type = TYPE_FLOAT;
 
-        if (var_type==TYPE_FLOAT) {
-            emit_push_float(a, atof(l->token));
+        if (var_type == TYPE_FLOAT) {
+            emit_push_float (vm, atof(l->token));
         } else {
-            emit_push_long(a, atoi(l->token));
+            emit_push_long (vm, atoi(l->token));
         }
         lex(l);
     }
@@ -289,19 +315,13 @@ static int stmt (LEXER *l, VM *vm) {
         //----------------------------------------------------
         return 1;
     case TOK_INT:      word_int      (l,vm); return 1;
-    case TOK_OBJECT:   word_OBJECT   (l,vm); return 1;
-//    case TOK_FLOAT:    word_float    (l,a); return 1;
-//    case TOK_VAR:      word_var      (l,a); return 1;
     case TOK_IF:       word_if       (l,vm); return 1;
-//    case TOK_FOR:      word_for      (l,a); return 1;
-//    case TOK_BREAK:    word_break    (l,a); return 1;
-//    case TOK_RETURN:   word_return   (l,a); return 1;
+    case TOK_FOR:      word_for      (l,vm); return 1;
+    case TOK_BREAK:    word_break    (l,vm); return 1;
+		//
     case TOK_FUNCTION: word_function (l,vm); return 1;
-//    case TOK_MODULE:   word_module   (l,a); return 1;
-//    case TOK_IMPORT:   word_import   (l,a); return 1;
-//    case TOK_INCLUDE:  word_INCLUDE  (l,a); return 1;
-//    case TOK_DEFINE:   word_DEFINE   (l,a); return 1;
-//    case TOK_IFDEF:    word_IFDEF    (l,a); return 1;
+    case TOK_OBJECT:   word_OBJECT   (l,vm); return 1;
+		//
     default:           expression    (l,vm); return 1;
     case '}': l->level--; return 1;
     case ';':
@@ -512,12 +532,161 @@ static void word_if (LEXER *l, VM *vm) {
 
         if (l->tok==')') break;
     }
-    if (see(l)=='{') stmt (l,vm); else Erro ("word(if) need start block: '{'\n");
+    if (see(l)=='{') stmt (l,vm); else Erro ("%s: %d, word(if) need start block: '{'\n", l->name, l->line);
 
     vm_Label (vm, array[if_count]);
     if_count--;
 
 }// word_if ()
+
+//
+// for (;;) { ... }
+// for (i = 0; i < 100; i++) { ... }
+//
+static void word_for (LEXER *l, VM *vm) {
+    //####### to "push/pop"
+    //
+    static char array[20][20];
+    static int for_count_total = 0;
+    static int for_count = 0;
+
+    if (lex(l) != '(') {
+        Erro ("%s: %d: ERRO FOR, dont found char: '('", l->name, l->line);
+        return;
+    }
+    lex (l);
+
+    // for (;;) { ... }
+    //
+    if (l->tok == ';' && lex(l) == ';') {
+        if (lex(l) != ')') {
+            Erro ("ERRO FOR, dont found char: ')'");
+            return;
+        }
+        if (see(l) != '{') { // ! check block '{'
+            Erro ("ERRO FOR, dont found char: '{'");
+            return;
+        }
+
+loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
+
+        for_count++;
+        for_count_total++;
+        sprintf (array[for_count], "FOR_%d", for_count_total);
+        sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
+        vm_Label(vm, array[for_count]);
+
+        stmt (l,vm); //<<<<<<<<<<  block  >>>>>>>>>>
+
+        emit_jump_jmp (vm, array[for_count]);
+
+        vm_Label (vm, array_break[loop_level]); // used to break
+        for_count--;
+
+loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
+		}
+/*
+    } else {
+        int i; // var index
+        int type = 0; // <  >  ==  !=
+        int inc = 0; // ++, --
+        int var_count = -1, number_count = 0;
+
+        // for (i = 10; i < 100; i++) { ... }
+        i = expr0 (l,a);
+        if (i != -1) {
+            lex(l);
+            if (!strcmp(Gvar[i].name, l->token)) {
+                // < >  ==  !=
+                type = lex(l);
+                lex(l); // get number or variable
+                var_count = VarFind (l->token);
+                if (var_count == -1) {
+                    number_count = atoi (l->token);
+                }
+                while (lex(l)) {
+                    if (l->tok == TOK_PLUS_PLUS)   inc = TOK_PLUS_PLUS;
+                    if (l->tok == TOK_MINUS_MINUS) inc = TOK_MINUS_MINUS;
+                    if (l->tok == ')') break;
+                }
+                if (l->tok == ')' && see(l)=='{') {
+
+loop_level++;
+                    for_count++;
+                    for_count_total++;
+                    sprintf (array[for_count], "FOR_%d", for_count_total);
+                    sprintf (array_break[loop_level], "FOR_END%d", for_count_total); // used for break
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " TOP OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+                    asm_label (a, array[for_count]);
+
+                    if (var_count == -1) {
+                        emit_mov_value_eax (a, number_count);
+                    } else {
+                        emit_mov_var_reg (a, &Gvar[var_count].value.i, EAX);
+                    }
+
+                    emit_cmp_eax_var (a, &Gvar[i].value.i);
+
+                    //
+                    // ! Jump to: " END OF LOOP "
+                    //
+                    if (type == '>') emit_jump_jle (a, array_break[loop_level]);
+                    else
+                    if (type == '<') emit_jump_jge (a, array_break[loop_level]);
+                    else
+                    {
+                        printf ("Not found: %d\n", type);
+                        Erro ("< > == !=");
+                    }
+
+                    //---------------------------------------------------------------
+                    // process the block starting from string char: '{'
+                    //---------------------------------------------------------------
+                    //
+                    stmt (l,a);  //<<<<<<<<<<  block  >>>>>>>>>>
+
+                    if (inc == TOK_PLUS_PLUS)
+                        emit_incl (a, &Gvar[i].value.i);
+                    else if (inc == TOK_MINUS_MINUS)
+                        emit_decl (a, &Gvar[i].value.i);
+
+                    //
+                    // Jump to: " TOP OF LOOP "
+                    //
+                    emit_jump_jmp (a, array[for_count]);
+
+                    asm_label(a, array_break[loop_level]); // used to break
+                    for_count--;
+
+//-------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<<  " END OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
+//-------------------------------------------------------------------
+
+loop_level--;
+                }// if (l->tok == ')' && see(l)=='{')
+                else
+                Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+            }
+            else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+
+        }// if (i != -1)
+        else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
+
+    }
+*/
+
+}//: word_for ()
+
+static void word_break (LEXER *l, VM *vm) {
+    if (loop_level) {
+        emit_jump_jmp (vm, array_break[loop_level]);
+    }
+    else Erro ("%s: %d: word 'break' need a loop", l->name, l->line);
+}
 
 static void word_OBJECT (LEXER *l, VM *vm) {
     while (lex(l)) {
@@ -806,6 +975,11 @@ void lib_printf (char *format, ...) {
     }
     if (new_line==0)
         printf ("\n");
+}
+
+void print_int_float (int i, float f) {
+		printf ("  arg1_int: %d\n", i);
+		printf ("arg2_float: %f\n", f);
 }
 
 void lib_info (int arg) {
