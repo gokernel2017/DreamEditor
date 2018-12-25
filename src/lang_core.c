@@ -4,11 +4,21 @@
 //
 // The Core:
 //
+// START DATE: 04/11/2018 - 07:00
+//
 //--------------------------------------------------------------------
 //
 #include "app.h"
 
 #define STR_ERRO_SIZE   1024
+#define LOCAL_MAX				20
+
+struct LOCAL_TEMP {
+    char    name [20];
+    int     type;
+    VALUE   value;
+    void    *info;
+}local[LOCAL_MAX];
 
 static void   word_int      (LEXER *l, VM *vm);
 static void		word_if				(LEXER *l, VM *vm);
@@ -60,10 +70,11 @@ static TFunc stdlib[]={
 int erro; // global
 TVar Gvar [GVAR_SIZE]; // global:
 
-static TFunc  * Gfunc = NULL;
-static VM     * vm_function = NULL;
-static ARG      argument [20];
-static F_STRING * fs = NULL;
+static TFunc  	* Gfunc = NULL;
+static VM     	* vm_function = NULL;
+static ARG      	argument [20];
+static F_STRING	*	fs = NULL;
+static ARG        argument [20];
 
 static int
     is_function,
@@ -80,6 +91,9 @@ static char
     func_name [100],
     array_break [20][20]   // used to word break
     ;
+
+void func_null (void) { printf ("FUNCTION: func_null\n"); }
+TFunc func_null_default = { "func_null", "00", (UCHAR*)func_null, 0, 0, NULL };
 
 static void expression (LEXER *l, VM *vm) {
     if (l->tok==TOK_ID || l->tok==TOK_NUMBER || l->tok=='(') {
@@ -103,6 +117,15 @@ static void expression (LEXER *l, VM *vm) {
       return;
         }
 
+				// increment ++ local variable only TYPE_LONG:
+        if (next == TOK_PLUS_PLUS && (i = LocalFind (l->token)) != -1) {
+						lex(l);
+						if (var_type == TYPE_LONG) {
+								emit_inc_local_long (vm, i);
+						}
+						return;
+				}
+
         if ((i = VarFind (l->token)) != -1) {
 
             main_variable_type = var_type = Gvar[i].type;
@@ -114,16 +137,9 @@ static void expression (LEXER *l, VM *vm) {
             if (var_type != TYPE_FLOAT) {
                 if (next == TOK_PLUS_PLUS) { // ++
                     lex(l);
-                    emit_inc_long (vm, i);
+                    emit_inc_var_long (vm, i);
               return;
                 }
-/*
-                if (next == TOK_MINUS_MINUS) { // --
-                    lex(l);
-                    emit_dec_long (vm, i);
-              return;
-                }
-*/
             }
 
             if (next == '=') {
@@ -248,35 +264,31 @@ static void atom (LEXER *l, VM *vm) { // expres
 
     if (l->tok==TOK_ID) {
         int i;
-/*
-        TFunc *fi;
+
+        if (is_function && local_count && (i = LocalFind(l->token)) !=-1) {
+            emit_push_local (vm, i);
+            lex(l);
+        }
+        // push a argument function:
         //
-        // push the pointer of function:
-        //
-        // NO CALL THE FUNCTION
-        //
-        if ((fi = FuncFind (l->token)) != NULL) {
-            if (see(l) == '(') {
-                // "execute the function"
-//                execute_call (l,a,fi);
-                // and ... push the result
-//                emit_push_eax(a);
-//                lex (l);
-            } else if (see(l) != '(') {
-                //
-                // push the real function pointer
-                //
-                emit_mov_var_reg (a, &fi->code, EAX);
-                emit_push_eax(a);
-                lex (l);
-            } 
+        else
+				if (is_function && (i = ArgumentFind(l->token)) != -1) {
+            emit_push_arg (vm, i);
+            lex(l);
         }
         else
-*/
         if ((i = VarFind(l->token)) !=-1) {
             var_type = Gvar[i].type;
             emit_push_var (vm, i);
             lex(l);
+/*
+						if (l->tok == TOK_PLUS_PLUS) {
+								if (var_type == TYPE_LONG) {
+										lex(l);
+										emit_inc_var_long (vm, i);
+								}
+						}
+*/
         }
         else Erro("%s: %d: - Expression atom, Ilegar Word: '%s'", l->name, l->line, l->token);
     }
@@ -417,7 +429,22 @@ static void word_int (LEXER *l, VM *vm) {
                 if (lex(l) == TOK_NUMBER)
                     value = atoi (l->token);
             }
-            CreateVarLong (name, value);
+            if (is_function) {
+                //---------------------------------------------------
+                // this is temporary ...
+                // in function(word_function) changes ...
+                //---------------------------------------------------
+                if (local_count < LOCAL_MAX) {
+                    sprintf (local[local_count].name, "%s", name);
+                    local[local_count].type = TYPE_LONG;
+                    local[local_count].value.l = value;
+                    local[local_count].info = NULL;
+                    local_count++;
+                }
+                else Erro ("Variable Local Max %d\n", LOCAL_MAX);
+                // ... need implementation ...
+            }
+            else CreateVarLong (name, value);
         }
         if (l->tok == ';') break;
     }
@@ -713,7 +740,7 @@ static void word_function (LEXER *l, VM *a) {
     if (FuncFind(name)!=NULL) {
         int brace = 0;
 
-        printf ("Function exist: ... REBOBINANDO '%s'\n", name);
+//        printf ("Function exist: ... REBOBINANDO '%s'\n", name);
 
         while (lex(l) && l->tok != ')');
 
@@ -751,15 +778,15 @@ static void word_function (LEXER *l, VM *a) {
                 argument_count++;
             }
         }
-//        else if (l->tok==TOK_FLOAT) {
-//            argument[argument_count].type[0] = TYPE_FLOAT; // 1
+        else if (l->tok==TOK_FLOAT) {
+            argument[argument_count].type[0] = TYPE_FLOAT; // 1
             //strcpy (argument[argument_count].type, "int");
-//            if (lex(l)==TOK_ID) {
-//                strcpy (argument[argument_count].name, l->token);
-//                strcat (proto, "f");
-//                argument_count++;
-//            }
-//        }
+            if (lex(l)==TOK_ID) {
+                strcpy (argument[argument_count].name, l->token);
+                strcat (proto, "f");
+                argument_count++;
+            }
+        }
         else if (l->tok==TOK_ID) {
             argument[argument_count].type[0] = TYPE_UNKNOW;
             strcpy (argument[argument_count].name, l->token);
@@ -806,7 +833,24 @@ static void word_function (LEXER *l, VM *a) {
         vm->code[func->len  ] = 0;
         vm->code[func->len+1] = 0;
         vm->code[func->len+2] = 0;
-/*
+
+				// NOW: create local variables
+        if (local_count) {
+            int i;
+            TVar *v = (TVar*) malloc(sizeof(TVar) * local_count);
+            if (v) {
+                for (i = 0; i < local_count; i++) {
+                    v[i].name  = strdup(local[i].name);
+                    v[i].type  = local[i].type;
+                    v[i].value = local[i].value;
+                    v[i].info  = local[i].info;
+                }
+                vm->local = v;
+                vm->local_count = local_count;
+            }
+            local_count = 0;
+        }
+
         //-------------------------------------------
         // HACKING ... ;)
         // Resolve Recursive:
@@ -817,15 +861,15 @@ static void word_function (LEXER *l, VM *a) {
             if (vm->code[i]==OP_CALL && *(void**)(vm->code+i+1) == func_null) {
                 vm->code[i] = OP_CALL_VM;     //<<<<<<<  change here  >>>>>>>
                 *(void**)(vm->code+i+1) = vm; //<<<<<<<  change here  >>>>>>>
-                i += 5;
+                //i += 5;
+								i += sizeof (void*) + 1;
             }
         }
-*/
 
         func->code = (UCHAR*)vm;
 
     } else {
-        is_function = is_recursive = argument_count = *func_name = 0;
+        is_function = is_recursive = argument_count = local_count = *func_name = 0;
         return;
     }
 
@@ -833,7 +877,7 @@ static void word_function (LEXER *l, VM *a) {
     func->next = Gfunc;
     Gfunc = func;
 
-    is_function = is_recursive = argument_count = *func_name = 0;
+    is_function = is_recursive = argument_count = local_count = *func_name = 0;
 
 }//:word_function ()
 
@@ -883,6 +927,13 @@ void CreateVarOBJECT (char *name) {
 
 
 TFunc *FuncFind (char *name) {
+
+    if (!strcmp(name, func_name)) { // ! recursive function
+        is_recursive = 1;
+        TFunc *fi = &func_null_default;
+        return fi;
+    }
+
     // array:
     TFunc *lib = stdlib;
     while (lib->name) {
@@ -908,6 +959,21 @@ int VarFind (char *name) {
       return i;
         v++;
         i++;
+    }
+    return -1;
+}
+int ArgumentFind (char *name) {
+    int i;
+    for(i=0;i<argument_count;i++)
+        if (!strcmp(argument[i].name, name)) return i;
+    return -1;
+}
+
+int LocalFind (char *name) {
+    int i;
+    for (i = 0; i < local_count; i++) {
+        if (local[i].name && !strcmp(local[i].name, name))
+      return i;
     }
     return -1;
 }

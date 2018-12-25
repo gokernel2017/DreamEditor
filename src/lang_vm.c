@@ -69,6 +69,20 @@ case OP_PUSH_STRING: {
     sp->s = s;
     } continue;
 
+case OP_PUSH_ARG: {
+    UCHAR i = (UCHAR)vm->code[vm->ip++];
+    sp++;
+    sp[0] = vm->arg[i];
+    } continue;
+
+case OP_PUSH_LOCAL: {
+    UCHAR i = (UCHAR)(vm->code[vm->ip++]);
+    if (vm->local) {
+        sp++;
+        sp[0] = vm->local[i].value;
+    }
+    } continue;
+
 case OP_POP_VAR: {
     UCHAR i = (UCHAR)vm->code[vm->ip++];
     switch (Gvar[i].type) {
@@ -78,9 +92,17 @@ case OP_POP_VAR: {
     sp--;
     } continue;
 
-case OP_INC_LONG: {
+case OP_INC_VAR_LONG: {
 		Gvar [ (UCHAR)(vm->code[vm->ip++]) ].value.l++;
     } continue;
+
+case OP_INC_LOCAL_LONG: {
+    UCHAR index = (UCHAR)(vm->code[vm->ip++]);
+    if (vm->local) {
+				vm->local[index].value.l++;
+		}
+    }
+    continue;
 
 case OP_MUL_LONG: sp[-1].l *= sp[0].l; sp--; continue;
 case OP_DIV_LONG: sp[-1].l /= sp[0].l; sp--; continue;
@@ -327,6 +349,7 @@ case OP_HALT:
     vm->ip = 0;
     //printf ("VM sp: %d\n", (int)(sp - stack));
     return sp;
+
     }// switch (vm->code[vm->ip++])
     }// for (;;)
 
@@ -450,13 +473,29 @@ void emit_push_var (VM *vm, UCHAR i) {
     *vm->p++ = OP_PUSH_VAR;
     *vm->p++ = i;
 }
+
+void emit_push_arg (VM *vm, UCHAR i) {
+    *vm->p++ = OP_PUSH_ARG;
+    *vm->p++ = i;
+}
+
+void emit_push_local (VM *vm, UCHAR i) {
+    *vm->p++ = OP_PUSH_LOCAL;
+    *vm->p++ = i;
+}
+
 void emit_pop_var (VM *vm, UCHAR i) {
     *vm->p++ = OP_POP_VAR;
     *vm->p++ = i;
 }
 
-void emit_inc_long (VM *vm, UCHAR index) {
-    *vm->p++ = OP_INC_LONG;
+void emit_inc_var_long (VM *vm, UCHAR index) {
+    *vm->p++ = OP_INC_VAR_LONG;
+    *vm->p++ = index;
+}
+
+void emit_inc_local_long (VM *vm, UCHAR index) {
+    *vm->p++ = OP_INC_LOCAL_LONG;
     *vm->p++ = index;
 }
 

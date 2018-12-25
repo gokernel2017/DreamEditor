@@ -582,11 +582,9 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
     if ((data = (DATA_EDITOR*)malloc(sizeof(DATA_EDITOR))) == NULL)
   return NULL;
 
-    if ((data->text = malloc(size))==NULL) {
+    if ((data->text = malloc(size)) == NULL) {
         printf ("ERRO: OBJECT EDITOR | text not allocated\n");
         return NULL;
-    } else {
-        printf ("OBJECT EDITOR | text allocated\n");
     }
     data->len = 0;
     if (text) {
@@ -632,9 +630,7 @@ OBJECT * app_NewEditor (OBJECT *parent, int id, int x, int y, char *text, int si
     app_ObjectAdd (parent, o);
 
     if (main_vm == NULL) {
-        if ((main_vm = app_LangInit(VM_DEFAULT_SIZE))) {
-            printf ("OBJECT EDITOR: VM (Virtual Machine) Created !!!\n");
-        } else {
+        if ((main_vm = app_LangInit(VM_DEFAULT_SIZE)) == NULL) {
             printf ("OBJECT EDITOR: VM (Virtual Machine) NOT FOUND ... SORRY.\n");
         }
     }

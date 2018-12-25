@@ -288,6 +288,8 @@ LIBIMPORT void    CreateVarLong   (char *name, int value);
 LIBIMPORT void    CreateVarOBJECT (char *name);
 LIBIMPORT TFunc * FuncFind        (char *name);
 LIBIMPORT int     VarFind         (char *name);
+LIBIMPORT int 		ArgumentFind		(char *name);
+LIBIMPORT int 		LocalFind				(char *name);
 // erro:
 LIBIMPORT void    Erro            (char *format, ...);
 LIBIMPORT char  * ErroGet         (void);

@@ -42,8 +42,11 @@ enum {
     OP_PUSH_VAR,
     OP_PUSH_STRING,
     OP_POP_VAR,
+		OP_PUSH_ARG,
+		OP_PUSH_LOCAL,
 		//
-		OP_INC_LONG,
+		OP_INC_VAR_LONG,
+		OP_INC_LOCAL_LONG,
     //
     OP_MUL_LONG,
     OP_DIV_LONG,
@@ -156,7 +159,8 @@ LIBIMPORT void emit_push_float (VM *vm, float value);
 LIBIMPORT void emit_push_var (VM *vm, UCHAR i);
 LIBIMPORT void emit_pop_var (VM *vm, UCHAR i);
 //
-LIBIMPORT void emit_inc_long (VM *vm, UCHAR index);
+LIBIMPORT void emit_inc_var_long (VM *vm, UCHAR index);
+LIBIMPORT void emit_inc_local_long (VM *vm, UCHAR index);
 //
 LIBIMPORT void emit_mul_long (VM *vm);
 LIBIMPORT void emit_div_long (VM *vm);
@@ -169,6 +173,8 @@ LIBIMPORT void emit_pop_eax (VM *vm);
 LIBIMPORT void emit_print_eax (VM *vm, UCHAR type);
 LIBIMPORT void emit_mov_eax_var (VM *vm, UCHAR index);
 LIBIMPORT void emit_push_string (VM *vm, char *s);
+LIBIMPORT void emit_push_arg (VM *vm, UCHAR i);
+LIBIMPORT void emit_push_local (VM *vm, UCHAR i);
 //
 LIBIMPORT void emit_cmp_long (VM *vm);
 LIBIMPORT void emit_jump_jmp (VM *vm, char *name);
