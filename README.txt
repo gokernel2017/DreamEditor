@@ -4,6 +4,10 @@
 
  01 : God the creator of the heavens and the earth in the name of Jesus Christ.
 
+ 02: webton  - member of unidev (www.undev.com.br).
+
+ 03: Sam. L. - member of VOL (www.vivaolinux.com.br).
+
  ----------------------------------------------
 
  Dream Editor:
@@ -22,11 +26,6 @@
    break
    function
    OBJECT
- 
- THANKS TO:
-   01: God the creator of the heavens and the earth in the name of Jesus Christ.
-   02: webton  - member of unidev (www.undev.com.br).
-   03: Sam. L. - member of VOL (www.vivaolinux.com.br).
-
+  
  BY: Francisco - gokernel@hotmail.com
 
