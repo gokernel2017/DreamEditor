@@ -22,7 +22,7 @@
 #include "src/app.h"
 
 #define DREAM_VERSION         0
-#define DREAM_VERSION_SUB     93
+#define DREAM_VERSION_SUB     94
 #define DREAM_VERSION_PATCH   0
 
 #define ID_BUTTON1    1000  // FuncList
@@ -297,7 +297,7 @@ void call_editor (int msg) {
 //                printf ("\nOK Saved: '%s'\n", data->FileName);
             }
             else {
-                printf ("\nInvalid File Name: '%s'\nPlease Edit a Valid File Name !", data->FileName);
+                printf ("\nInvalid File Name: '%s'\nPlease Edit a Valid File Name !\n", data->FileName);
                 data->FileName[0] = 0;
             }
         }
@@ -416,7 +416,7 @@ void CreateInterface (void) {
         app_EditorSetFileName (editor, FileName);
     } else {
         editor = app_NewEditor (NULL, ID_EDITOR, 3, 35,
-        "\n // Expression:\n\n   10 * 20 + 3 * 5; // 215\n\n // CTRL + R: To Run Script.\n",
+        "\nint i = 105;\n\n    // Expression:\n    10 * 20 + 3 * 5 + i; // display: 320\n\n // CTRL + R: Run Script.\n\n",
         50000
         );
     }

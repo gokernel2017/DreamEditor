@@ -21,6 +21,7 @@ struct LOCAL_TEMP {
 }local[LOCAL_MAX];
 
 static void   word_int      (LEXER *l, VM *vm);
+static void   word_float		(LEXER *l, VM *vm);
 static void		word_if				(LEXER *l, VM *vm);
 static void		word_for			(LEXER *l, VM *vm);
 static void		word_break		(LEXER *l, VM *vm);
@@ -125,6 +126,14 @@ static void expression (LEXER *l, VM *vm) {
 						}
 						return;
 				}
+				// decrement -- local variable only TYPE_LONG:
+        if (next == TOK_MINUS_MINUS && (i = LocalFind (l->token)) != -1) {
+						lex(l);
+						if (var_type == TYPE_LONG) {
+								emit_dec_local_long (vm, i);
+						}
+						return;
+				}
 
         if ((i = VarFind (l->token)) != -1) {
 
@@ -138,6 +147,11 @@ static void expression (LEXER *l, VM *vm) {
                 if (next == TOK_PLUS_PLUS) { // ++
                     lex(l);
                     emit_inc_var_long (vm, i);
+              return;
+                }
+                if (next == TOK_MINUS_MINUS) { // --
+                    lex(l);
+                    emit_dec_var_long (vm, i);
               return;
                 }
             }
@@ -207,6 +221,20 @@ static int expr0 (LEXER *l, VM *vm) {
                     lex_restore (l); // restore the lexer position
                 }
             }//: if ((i=VarFind(l->token)) != -1)
+						else
+            if ((i=LocalFind(l->token)) != -1) {
+                lex_save (l); // save the lexer position
+                if (lex(l) == '=') {
+                    lex(l);
+                    expr1(l,vm);
+                    // Copia o TOPO DA PILHA ( sp ) para a variavel ... e decrementa sp++.
+                    emit_pop_local (vm,i);
+              return i;
+                } else {
+                    lex_restore (l); // restore the lexer position
+                }
+            }//: if ((i=VarFind(l->token)) != -1)
+
         }//: if (see(l)=='=')
     }
     expr1(l,vm);
@@ -219,8 +247,9 @@ static void expr1 (LEXER *l, VM *vm) { // '+' '-' : ADDITION | SUBTRACTION
     while ((op=l->tok) == '+' || op == '-') {
         lex(l);
         expr2(l,vm);
-        if (var_type==TYPE_FLOAT) {
-//            if (op=='+') emit_add_float(a);
+        if (var_type == TYPE_FLOAT) {
+            if (op=='+') emit_add_float(vm);
+            if (op=='-') emit_sub_float(vm);
         } else { // LONG
             if (op=='+') emit_add_long(vm);
             if (op=='-') emit_sub_long(vm);
@@ -233,8 +262,9 @@ static void expr2 (LEXER *l, VM *vm) { // '*' '/' : MULTIPLICATION | DIVISION
     while ((op=l->tok) == '*' || op == '/') {
         lex(l);
         expr3(l,vm);
-        if (var_type==TYPE_FLOAT) {
-//            if (op=='*') emit_mul_float(a);
+        if (var_type == TYPE_FLOAT) {
+            if (op=='*') emit_mul_float(vm);
+            if (op=='/') emit_div_float(vm);
         } else { // LONG
             if (op=='*') emit_mul_long(vm);
             if (op=='/') emit_div_long(vm);
@@ -327,6 +357,7 @@ static int stmt (LEXER *l, VM *vm) {
         //----------------------------------------------------
         return 1;
     case TOK_INT:      word_int      (l,vm); return 1;
+    case TOK_FLOAT:		 word_float		 (l,vm); return 1;
     case TOK_IF:       word_if       (l,vm); return 1;
     case TOK_FOR:      word_for      (l,vm); return 1;
     case TOK_BREAK:    word_break    (l,vm); return 1;
@@ -448,10 +479,46 @@ static void word_int (LEXER *l, VM *vm) {
         }
         if (l->tok == ';') break;
     }
-//printf ("word int(%s) LINE: %d\n", l->token, l->line);
-    if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
+
+    if (l->tok != ';') Erro ("ERRO: The word(int) need the char(;) on the end\n");
 
 }// word_int()
+
+static void word_float (LEXER *l, VM *vm) {
+    while (lex(l)) {
+        if (l->tok==TOK_ID) {
+            char name[255];
+            float value = 0;
+
+            strcpy (name, l->token); // save
+
+            if (lex(l) == '=') {
+                if (lex(l) == TOK_NUMBER)
+                    value = atof (l->token);
+            }
+            if (is_function) {
+                //---------------------------------------------------
+                // this is temporary ...
+                // in function(word_function) changes ...
+                //---------------------------------------------------
+                if (local_count < LOCAL_MAX) {
+                    sprintf (local[local_count].name, "%s", name);
+                    local[local_count].type = TYPE_FLOAT;
+                    local[local_count].value.f = value;
+                    local[local_count].info = NULL;
+                    local_count++;
+                }
+                else Erro ("Variable Local Max %d\n", LOCAL_MAX);
+                // ... need implementation ...
+            }
+            else CreateVarFloat (name, value);
+        }
+        if (l->tok == ';') break;
+    }
+
+    if (l->tok != ';') Erro ("ERRO: The word(float) need the char(;) on the end\n");
+
+}// word_float()
 
 static void word_if (LEXER *l, VM *vm) {
     //**** to "push/pop"
@@ -611,8 +678,6 @@ loop_level++;  // <<<<<<<<<<  ! PUSH  >>>>>>>>>>
         for_count--;
 
 loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
-		}
-/*
     } else {
         int i; // var index
         int type = 0; // <  >  ==  !=
@@ -620,7 +685,7 @@ loop_level--;  // <<<<<<<<<<  ! POP  >>>>>>>>>>
         int var_count = -1, number_count = 0;
 
         // for (i = 10; i < 100; i++) { ... }
-        i = expr0 (l,a);
+        i = expr0 (l,vm); // set the first variable: for (i = 100;
         if (i != -1) {
             lex(l);
             if (!strcmp(Gvar[i].name, l->token)) {
@@ -648,22 +713,37 @@ loop_level++;
 //<<<<<<<<<<<<<<<<<<<<<<<  " TOP OF LOOP "  >>>>>>>>>>>>>>>>>>>>>>>>>
 //-------------------------------------------------------------------
 
-                    asm_label (a, array[for_count]);
+                    vm_Label (vm, array[for_count]);
+
+										//
+										//-----------------------------------------------
+										//
+										// push the first variable: 'a'
+										// a < b;
+										emit_push_var (vm, i); // 'a'
 
                     if (var_count == -1) {
-                        emit_mov_value_eax (a, number_count);
+												// ! push a number:
+												// a < 1000;
+                        emit_push_long (vm, number_count);
                     } else {
-                        emit_mov_var_reg (a, &Gvar[var_count].value.i, EAX);
+												// ! push the second variable: 'b'
+												// a < b;
+                        emit_push_var (vm, var_count); // 'b'
                     }
 
-                    emit_cmp_eax_var (a, &Gvar[i].value.i);
+										// compare the first variable ( a ) with the second variable ( b ) or number:
+										//
+										emit_cmp_long (vm);
 
+										//-----------------------------------------------
+										
                     //
                     // ! Jump to: " END OF LOOP "
                     //
-                    if (type == '>') emit_jump_jle (a, array_break[loop_level]);
+                    if (type == '>') emit_jump_jle (vm, array_break[loop_level]);
                     else
-                    if (type == '<') emit_jump_jge (a, array_break[loop_level]);
+                    if (type == '<') emit_jump_jge (vm, array_break[loop_level]);
                     else
                     {
                         printf ("Not found: %d\n", type);
@@ -674,19 +754,19 @@ loop_level++;
                     // process the block starting from string char: '{'
                     //---------------------------------------------------------------
                     //
-                    stmt (l,a);  //<<<<<<<<<<  block  >>>>>>>>>>
+                    stmt (l,vm);  //<<<<<<<<<<  block  >>>>>>>>>>
 
                     if (inc == TOK_PLUS_PLUS)
-                        emit_incl (a, &Gvar[i].value.i);
+                        emit_inc_var_long (vm, i);
                     else if (inc == TOK_MINUS_MINUS)
-                        emit_decl (a, &Gvar[i].value.i);
+                        emit_dec_var_long (vm, i);
 
                     //
                     // Jump to: " TOP OF LOOP "
                     //
-                    emit_jump_jmp (a, array[for_count]);
+                    emit_jump_jmp (vm, array[for_count]);
 
-                    asm_label(a, array_break[loop_level]); // used to break
+                    vm_Label(vm, array_break[loop_level]); // used to break
                     for_count--;
 
 //-------------------------------------------------------------------
@@ -704,7 +784,6 @@ loop_level--;
         else Erro ("%s: %d: USAGE: for(i = 1; i < 100; i++) { ... }\n", l->name, l->line);
 
     }
-*/
 
 }//: word_for ()
 
@@ -892,7 +971,7 @@ VM * app_LangInit (unsigned int size) {
     return vm;
 }
 
-void CreateVarLong (char *name, int value) {
+void CreateVarLong (char *name, long l) {
     TVar *v = Gvar;
     int i = 0;
     while (v->name) {
@@ -904,10 +983,28 @@ void CreateVarLong (char *name, int value) {
     if (i < GVAR_SIZE) {
         v->name = strdup(name);
         v->type = TYPE_LONG;
-        v->value.l = value;
+        v->value.l = l;
         v->info = NULL;
     }
 }
+
+void CreateVarFloat (char *name, float f) {
+    TVar *v = Gvar;
+    int i = 0;
+    while (v->name) {
+        if (!strcmp(v->name, name))
+      return;
+        v++;
+        i++;
+    }
+    if (i < GVAR_SIZE) {
+        v->name = strdup(name);
+        v->type = TYPE_FLOAT;
+        v->value.f = f;
+        v->info = NULL;
+    }
+}
+
 void CreateVarOBJECT (char *name) {
     TVar *v = Gvar;
     int i = 0;

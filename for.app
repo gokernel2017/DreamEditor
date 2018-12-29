@@ -11,13 +11,11 @@
 //
 int i;
 
-  printf ("\nWord for example: 0 ... 20.\n");
-  i = 0;
-  for (;;) {
+  printf ("\nWord for example: 0 ... 19.\n");
+
+  for (i = 0; i < 20; i++) {
+
       printf ("Value i: %d\n", i);
-      i++;
-      if (i > 20) {
-          break;
-      }
+
   }
 

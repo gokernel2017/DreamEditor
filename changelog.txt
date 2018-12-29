@@ -1,0 +1,13 @@
+
+ DreamEditor ChangeLog:
+
+ VERSION: 0.94.0:
+ ------------------------------------------------
+ Language Words:
+   int, float, if, for, break,
+   function, OBJECT.
+ Language Increment/Decrement Long: i++; i--;
+ Language Local Variable Long.
+ Language Function Argument.
+ ------------------------------------------------
+
