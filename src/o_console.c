@@ -30,7 +30,7 @@ struct ITEN {
     ITEN  *next;
 };
 
-SDL_Rect r;
+static SDL_Rect r;
 
 static void thanks (OBJECT *o);
 void app_ConsoleDeteteIten (DATA_CONSOLE *data, ITEN *iten);

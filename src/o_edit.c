@@ -14,7 +14,7 @@ typedef struct {
     int     d2;     // Position of cursor
 }DATA_EDIT;
 
-SDL_Rect r;
+static SDL_Rect r;
 
 int proc_edit (OBJECT *o, int msg, int value) {
     DATA_EDIT *data = app_GetData(o);
